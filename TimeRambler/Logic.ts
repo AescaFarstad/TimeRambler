@@ -1,6 +1,6 @@
 ﻿class Logic {
 
-    private static UPDATE_PERIOD: number = 100;
+    private static UPDATE_PERIOD: number = 300;
 
     constructor() {
     }

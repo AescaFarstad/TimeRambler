@@ -18,6 +18,8 @@
 
         this.renderer.load(rootElement, this.engine);
         this.logic.load(this.engine, this.renderer);
+
+        this.dataSource.initEngine(this.engine);
     }
 
     public start() {

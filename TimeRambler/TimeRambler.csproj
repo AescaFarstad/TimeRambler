@@ -32,7 +32,11 @@
     <TypeScriptCompile Include="IInput.ts" />
     <TypeScriptCompile Include="Input.ts" />
     <TypeScriptCompile Include="Logic.ts" />
+    <TypeScriptCompile Include="Modifier.ts" />
     <TypeScriptCompile Include="Renderer.ts" />
+    <TypeScriptCompile Include="ResourcesRenderer.ts" />
+    <TypeScriptCompile Include="Stat.ts" />
+    <TypeScriptCompile Include="StatPrototype.ts" />
   </ItemGroup>
   <ItemGroup>
     <None Include="web.Debug.config">
