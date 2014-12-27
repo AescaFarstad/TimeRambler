@@ -1,0 +1,15 @@
+﻿0)
+	engine ouline
+
+1)	Debug Panel
+		time elapsed
+2)
+	Stats Panel
+		pop
+		food
+		wood
+3)
+	Projects Panel
+		grow
+		small hunt
+		great hunt
