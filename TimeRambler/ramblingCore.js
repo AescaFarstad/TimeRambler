@@ -13,7 +13,8 @@ var Binder = (function () {
         this.renderer = new Renderer();
         this.input = new Input();
         this.logic = new Logic();
-        this.renderer.load(rootElement, this.engine);
+        this.input.load(this.engine);
+        this.renderer.load(rootElement, this.engine, this.input);
         this.logic.load(this.engine, this.renderer);
         this.dataSource.initEngine(this.engine);
     };
@@ -28,6 +29,7 @@ var DataSource = (function () {
     DataSource.prototype.initEngine = function (engine) {
         var popResource = new Stat("pop", "pop");
         popResource.insertCapModifier(new Modifier("init", 10, 0));
+        popResource.isDecimal = false;
         engine.addResource(popResource);
         var foodResource = new Stat("food", "food");
         foodResource.setValue(50, engine);
@@ -36,8 +38,20 @@ var DataSource = (function () {
         engine.addResource(foodResource);
         popResource.onValueChanged = function (stat, engine) { return engine.resourcesById["food"].editRateModifier("pop", -stat.value * DataSource.foorPerPop / 1000, 0); };
         popResource.setValue(5, engine);
+        engine.addRule(this.foodRule);
+    };
+    DataSource.prototype.foodRule = function (engine) {
+        var food = engine.resourcesById["food"];
+        var pop = engine.resourcesById["pop"];
+        var popVal = pop.value;
+        while (food.value < 0 && popVal > 0) {
+            food.setValue(food.value + DataSource.canibalicFood, engine);
+            popVal -= 1;
+        }
+        pop.setValue(popVal, engine);
     };
     DataSource.foorPerPop = 0.1;
+    DataSource.canibalicFood = 20;
     return DataSource;
 })();
 var DebugRenderer = (function () {
@@ -47,7 +61,7 @@ var DebugRenderer = (function () {
         this.root = root;
     };
     DebugRenderer.prototype.update = function (timeDelta) {
-        this.root.innerHTML = "Elapsed time: " + this.toTimeString(this.engine.time);
+        this.root.innerHTML = "Elapsed time: " + this.toTimeString(this.engine.time) + "<br>scale: " + (this.engine.timeScale / this.engine.stepScale).toFixed(1);
     };
     DebugRenderer.prototype.load = function (root, engine) {
         this.root = root;
@@ -58,7 +72,7 @@ var DebugRenderer = (function () {
         var hours = (Math.floor(time / (3600 * 1000)));
         var minutes = (Math.floor(time / (60 * 1000)) % 60);
         var seconds = (Math.floor(time / 1000) % 60);
-        var ms = (time % 1000);
+        var ms = Math.floor(time % 1000);
         var hoursStr = hours.toString();
         if (hoursStr.length < 2)
             hoursStr = "0" + hours;
@@ -79,9 +93,13 @@ var DebugRenderer = (function () {
 })();
 var Engine = (function () {
     function Engine() {
+        this.timeScale = 1;
+        this.stepScale = 1;
+        this.numericScale = 0;
         this._time = 0;
         this._resources = new Array();
         this._resourcesById = Object();
+        this._rules = new Array();
     }
     Object.defineProperty(Engine.prototype, "time", {
         get: function () {
@@ -104,10 +122,20 @@ var Engine = (function () {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(Engine.prototype, "rules", {
+        get: function () {
+            return this._rules;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Engine.prototype.update = function (timeDelta) {
         this._time += timeDelta;
         for (var i = 0; i < this._resources.length; i++) {
             this._resources[i].updateStart(timeDelta);
+        }
+        for (var i = 0; i < this._rules.length; i++) {
+            this._rules[i](this);
         }
         for (var i = 0; i < this._resources.length; i++) {
             this._resources[i].updateEnd();
@@ -117,11 +145,36 @@ var Engine = (function () {
         this._resources.push(resource);
         this.resourcesById[resource.id] = resource;
     };
+    Engine.prototype.addRule = function (rule) {
+        this._rules.push(rule);
+    };
     return Engine;
 })();
 var Input = (function () {
     function Input() {
     }
+    Input.prototype.load = function (engine) {
+        this.engine = engine;
+    };
+    Input.prototype.timeScaleDown = function () {
+        this.engine.numericScale--;
+        this.updateTimeScales();
+    };
+    Input.prototype.timeScaleNormal = function () {
+        this.engine.numericScale = 0;
+        this.updateTimeScales();
+    };
+    Input.prototype.timeScaleUp = function () {
+        this.engine.numericScale++;
+        this.updateTimeScales();
+    };
+    Input.prototype.timeScaleStop = function () {
+        this.engine.timeScale = 0;
+    };
+    Input.prototype.updateTimeScales = function () {
+        this.engine.timeScale = 1 + this.engine.numericScale / 5;
+        this.engine.stepScale = Math.pow(0.9, this.engine.numericScale);
+    };
     return Input;
 })();
 var Logic = (function () {
@@ -143,10 +196,11 @@ var Logic = (function () {
             return;
         var newStamp = new Date().getTime();
         var delta = newStamp - this.timeStamp;
+        delta *= this.engine.timeScale / this.engine.stepScale;
         this.timeStamp = newStamp;
         this.engine.update(delta);
         this.renderer.update(delta);
-        setTimeout(function () { return _this.update(); }, Logic.UPDATE_PERIOD);
+        setTimeout(function () { return _this.update(); }, Logic.UPDATE_PERIOD * this.engine.stepScale);
     };
     Logic.UPDATE_PERIOD = 300;
     return Logic;
@@ -164,11 +218,24 @@ var Renderer = (function () {
         this.debugRenderer = new DebugRenderer();
         this.resourcesRenderer = new ResourcesRenderer();
     }
-    Renderer.prototype.load = function (root, engine) {
+    Renderer.prototype.load = function (root, engine, input) {
+        var _this = this;
         this.root = root;
         this.engine = engine;
+        this.input = input;
         this.debugRenderer.load(root.getElementsByClassName("debugPanel")[0], engine);
         this.resourcesRenderer.load(root.getElementsByClassName("resourcesPanel")[0], engine);
+        if (input)
+            document.onkeydown = function (e) {
+                if (e.keyCode == 97)
+                    _this.input.timeScaleDown();
+                if (e.keyCode == 100)
+                    _this.input.timeScaleNormal();
+                if (e.keyCode == 103)
+                    _this.input.timeScaleUp();
+                if (e.keyCode == 96)
+                    _this.input.timeScaleStop();
+            };
     };
     Renderer.prototype.update = function (timeDelta) {
         this.debugRenderer.update(timeDelta);
@@ -185,7 +252,7 @@ var ResourcesRenderer = (function () {
     ResourcesRenderer.prototype.update = function (timeDelta) {
         var html = "<h4>Resources:</h4><table class=\"resourceTable\" cellspacing=\"5\">";
         for (var i = 0; i < this.engine.resources.length; i++) {
-            html += "<tr><td>" + this.engine.resources[i].name + "</td><td>" + this.engine.resources[i].value.toFixed(2) + "</td><td>/" + this.engine.resources[i].cap + "</td><td>(" + this.engine.resources[i].rate * 1000 + ")</td></tr>\n";
+            html += "<tr><td>" + this.engine.resources[i].name + "</td><td>" + this.engine.resources[i].value.toFixed(this.engine.resources[i].isDecimal ? 2 : 0) + "</td><td>/" + this.engine.resources[i].cap + "</td><td>(" + this.engine.resources[i].rate * 1000 + ")</td></tr>\n";
         }
         html += "</table>";
         this.root.innerHTML = html;
@@ -198,6 +265,7 @@ var ResourcesRenderer = (function () {
 })();
 var Stat = (function () {
     function Stat(id, name) {
+        this.isDecimal = true;
         this.id = id;
         this.name = name;
         this._value = 0;

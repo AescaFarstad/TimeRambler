@@ -16,7 +16,8 @@
         this.input = new Input();
         this.logic = new Logic();
 
-        this.renderer.load(rootElement, this.engine);
+        this.input.load(this.engine);
+        this.renderer.load(rootElement, this.engine, this.input);
         this.logic.load(this.engine, this.renderer);
 
         this.dataSource.initEngine(this.engine);

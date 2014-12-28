@@ -7,6 +7,7 @@
 
     public name: string;
     public id: string;
+    public isDecimal: boolean = true;
 
     private rateModifiers: Array<Modifier>;
     private capModifiers: Array<Modifier>;

@@ -26,9 +26,10 @@
             return;
         var newStamp: number = new Date().getTime();
         var delta: number = newStamp - this.timeStamp;
+        delta *= this.engine.timeScale / this.engine.stepScale;
         this.timeStamp = newStamp;
         this.engine.update(delta);
         this.renderer.update(delta);
-        setTimeout(() => this.update(), Logic.UPDATE_PERIOD);
+        setTimeout(() => this.update(), Logic.UPDATE_PERIOD * this.engine.stepScale);
     }
 }  

@@ -11,7 +11,7 @@
     }
 
     public update(timeDelta: number): void {
-        this.root.innerHTML = "Elapsed time: " + this.toTimeString(this.engine.time);
+        this.root.innerHTML = "Elapsed time: " + this.toTimeString(this.engine.time) + "<br>scale: " + (this.engine.timeScale/this.engine.stepScale).toFixed(1);
     }
 
     public load(root: HTMLElement, engine: Engine): void {
@@ -25,7 +25,7 @@
         var hours: number = (Math.floor(time / (3600 * 1000)));
         var minutes: number = (Math.floor(time / (60 * 1000)) % 60);
         var seconds: number = (Math.floor(time/ 1000) % 60);
-        var ms: number = (time % 1000);
+        var ms: number = Math.floor(time % 1000);
         var hoursStr: String = hours.toString();
         if (hoursStr.length < 2)
             hoursStr = "0" + hours;

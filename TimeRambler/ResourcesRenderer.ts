@@ -15,7 +15,7 @@
 
         for (var i: number = 0; i < this.engine.resources.length; i++) {
             html += "<tr><td>" + this.engine.resources[i].name + "</td><td>" +
-                                this.engine.resources[i].value.toFixed(2) + "</td><td>/" +
+                                this.engine.resources[i].value.toFixed(this.engine.resources[i].isDecimal ? 2 : 0) + "</td><td>/" +
                                 this.engine.resources[i].cap + "</td><td>(" +
                                 this.engine.resources[i].rate * 1000 + ")</td></tr>\n";
         }
