@@ -28,4 +28,8 @@
         this.engine.timeScale = 1 + this.engine.numericScale / 5;
         this.engine.stepScale = Math.pow(0.9, this.engine.numericScale);
     }
+    private activateAction(action: Action): void {
+        if (action.isAvailable(this.engine))
+            action.start(this.engine);
+    }
 }  

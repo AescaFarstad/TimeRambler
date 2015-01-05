@@ -3,5 +3,6 @@
     timeScaleNormal();
     timeScaleUp();
     timeScaleStop();
+    activateAction(action:Action);
 
 }  

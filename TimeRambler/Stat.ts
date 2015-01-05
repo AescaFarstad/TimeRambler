@@ -8,6 +8,7 @@
     public name: string;
     public id: string;
     public isDecimal: boolean = true;
+    public hasCap: boolean = true;
 
     private rateModifiers: Array<Modifier>;
     private capModifiers: Array<Modifier>;
@@ -29,7 +30,7 @@
     }
 
     public updateEnd(): void {
-        if (this._value > this._capCache)
+        if (this.hasCap && this._value > this._capCache)
             this._value = this._capCache;
         else if (this._value < 0)
             this._value = 0;
@@ -101,9 +102,19 @@
 
     public setValue(value: number, engine:Engine): void {
         if (this._value != value) {
+            var delta: number = value - this._value;
             this._value = value;
             if (this.onValueChanged != null)
-                this.onValueChanged(this, engine);
+                this.onValueChanged(this, engine, delta);
+        }
+
+    }
+
+    public modify(delta: number, engine: Engine): void {
+        if (delta != 0) {
+            this._value += delta;
+            if (this.onValueChanged != null)
+                this.onValueChanged(this, engine, delta);
         }
 
     }

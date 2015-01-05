@@ -24,16 +24,21 @@
     <Content Include="web.config" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="Action.ts" />
+    <TypeScriptCompile Include="ActionOutcome.ts" />
+    <TypeScriptCompile Include="ActionsRenderer.ts" />
     <TypeScriptCompile Include="app.ts" />
     <TypeScriptCompile Include="Binder.ts" />
     <TypeScriptCompile Include="DataSource.ts" />
     <TypeScriptCompile Include="DebugRenderer.ts" />
     <TypeScriptCompile Include="Engine.ts" />
+    <TypeScriptCompile Include="HelperHTML.ts" />
     <TypeScriptCompile Include="IInput.ts" />
     <TypeScriptCompile Include="Input.ts" />
     <TypeScriptCompile Include="Logic.ts" />
     <TypeScriptCompile Include="Modifier.ts" />
     <TypeScriptCompile Include="Renderer.ts" />
+    <TypeScriptCompile Include="ResourceRequirement.ts" />
     <TypeScriptCompile Include="ResourcesRenderer.ts" />
     <TypeScriptCompile Include="Stat.ts" />
     <TypeScriptCompile Include="StatPrototype.ts" />
@@ -74,7 +79,7 @@
   </ProjectExtensions>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <TypeScriptRemoveComments>false</TypeScriptRemoveComments>
-    <TypeScriptSourceMap>true</TypeScriptSourceMap>
+    <TypeScriptSourceMap>True</TypeScriptSourceMap>
     <TypeScriptOutFile>ramblingCore.js</TypeScriptOutFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
