@@ -4,5 +4,6 @@
     timeScaleUp();
     timeScaleStop();
     activateAction(action:Action);
+    cancelAction(action:Action);
 
 }  

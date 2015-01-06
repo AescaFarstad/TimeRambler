@@ -34,7 +34,7 @@
         var growFailOutcome: ActionOutcome = new ActionOutcome("fail", 45, this.growFailExec);
         var growSuccessOutcome: ActionOutcome = new ActionOutcome("success", 55, this.growSuccessExec);
 
-        var growAction: Action = new Action("grow", "Grow", 2, 2 * 1000, new ResourceRequirement(["food"], [20]), [growFailOutcome, growSuccessOutcome]);
+        var growAction: Action = new Action("grow", "Grow", 2, 5 * 1000, new ResourceRequirement(["food"], [10]), [growFailOutcome, growSuccessOutcome]);
         engine.addAction(growAction);
 
     }

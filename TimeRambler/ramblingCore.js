@@ -6,6 +6,7 @@ var Action = (function () {
         this.time = time;
         this.resources = resources;
         this.outcomes = outcomes;
+        this.viewData = new ActionViewData();
     }
     Action.prototype.isAvailable = function (engine) {
         return engine.resourcesById["unemployed"].value >= this.pop && this.resources.isMet(engine);
@@ -34,7 +35,7 @@ var Action = (function () {
         configurable: true
     });
     Action.prototype.cancel = function (engine) {
-        engine.resourcesById["unemployed"].modify(-this.pop);
+        engine.resourcesById["unemployed"].modify(this.pop);
         this.resources.giveBack(engine);
         this._isStarted = false;
     };
@@ -72,21 +73,25 @@ var ActionsRenderer = (function () {
         this.root = root;
     };
     ActionsRenderer.prototype.update = function (timeDelta) {
-        var parentNode = this.root.parentNode;
-        this.root.parentNode.removeChild(this.root);
-        this.root.innerHTML = "";
-        this.root.appendChild(HelperHTML.element("h3", "", "Actions:"));
-        var list = HelperHTML.element("ol", "actionList");
         for (var i = 0; i < this.engine.actions.length; i++) {
-            list.appendChild(this.actionToHtml(this.engine.actions[i], this.input));
+            var isRemoved = false;
+            if (!this.engine.actions[i].viewData.isValid(this.engine.actions[i], this.engine) && this.engine.actions[i].viewData.isRendered) {
+                this.list.removeChild(this.engine.actions[i].viewData.element);
+                isRemoved = true;
+            }
+            if (isRemoved || !this.engine.actions[i].viewData.isRendered) {
+                var element = this.actionToHtml(this.engine.actions[i], this.input);
+                this.engine.actions[i].viewData.setRendered(this.engine.actions[i], element, this.engine);
+                this.list.appendChild(element);
+            }
         }
-        this.root.appendChild(list);
-        parentNode.appendChild(this.root);
     };
     ActionsRenderer.prototype.load = function (root, engine, input) {
         this.root = root;
         this.engine = engine;
         this.input = input;
+        this.list = root.getElementsByClassName("actionList")[0];
+        this.mapping = {};
     };
     ActionsRenderer.prototype.actionToHtml = function (action, input) {
         var outerElement = HelperHTML.element("li", "action");
@@ -107,29 +112,29 @@ var ActionsRenderer = (function () {
             div.appendChild(innerDiv);
         }
         var buttonDiv = HelperHTML.element("div", "actionButtonContainer");
-        var button = HelperHTML.element("button", "actionButton", "Start");
+        var button = HelperHTML.element("button", "actionButton", action.isStarted ? "Cancel" : "Start");
         if (input)
-            button.onclick = function () { return input.activateAction(action); };
+            button.onclick = action.isStarted ? function () { return input.cancelAction(action); } : function () { return input.activateAction(action); };
         buttonDiv.appendChild(button);
         div.appendChild(buttonDiv);
         outerElement.appendChild(div);
-        /*
-        this.root.appendChild(document.createElement("div",
-
-        var result: string = "<div class=\"actionHeader_" + availability + "\"><span class=\"actionHeaderText_" + availability + "\">" +
-                            action.name + "</span></div><div class=\"actionContent\">" +
-                            "<div class=\"actionContentText\">Pop: " + action.pop + "</div> <div class=\"actionContentText\">Time: " + Math.ceil(action.time / 1000) + " sec.</div>";
-        if (!action.resources.isEmpty) {
-            result += "<div class=\"actionContentText\">Requires:</div>";
-            for (var i: number = 0; i < action.resources.resources.length; i++) {
-                var resource: Stat = this.engine.resourcesById[action.resources.resources[i]];
-                result += "<div class=\"actionContent_Requirement\">" + resource.name + ": " + action.resources.quantaties[i] + "</div>";
-            }
-        }
-        result += "<div class=\"actionButtonContainer\"><button class=\"actionButton\"> Start </button></div>";*/
         return outerElement;
     };
     return ActionsRenderer;
+})();
+var ActionViewData = (function () {
+    function ActionViewData() {
+    }
+    ActionViewData.prototype.setRendered = function (action, element, engine) {
+        this.isRendered = true;
+        this.isStarted = action.isStarted;
+        this.element = element;
+        this.isAvailable = action.isAvailable(engine);
+    };
+    ActionViewData.prototype.isValid = function (action, engine) {
+        return this.isStarted == action.isStarted && this.isAvailable == action.isAvailable(engine);
+    };
+    return ActionViewData;
 })();
 window.onload = function () {
     var el = document.getElementById('content');
@@ -178,7 +183,7 @@ var DataSource = (function () {
         engine.addRule(this.foodRule);
         var growFailOutcome = new ActionOutcome("fail", 45, this.growFailExec);
         var growSuccessOutcome = new ActionOutcome("success", 55, this.growSuccessExec);
-        var growAction = new Action("grow", "Grow", 2, 2 * 1000, new ResourceRequirement(["food"], [20]), [growFailOutcome, growSuccessOutcome]);
+        var growAction = new Action("grow", "Grow", 2, 5 * 1000, new ResourceRequirement(["food"], [10]), [growFailOutcome, growSuccessOutcome]);
         engine.addAction(growAction);
     };
     DataSource.prototype.popRule = function (stat, engine, delta) {
@@ -384,6 +389,10 @@ var Input = (function () {
         if (action.isAvailable(this.engine))
             action.start(this.engine);
     };
+    Input.prototype.cancelAction = function (action) {
+        if (action.isStarted)
+            action.cancel(this.engine);
+    };
     return Input;
 })();
 var Logic = (function () {
@@ -455,6 +464,29 @@ var Renderer = (function () {
     };
     return Renderer;
 })();
+var RenderUtils = (function () {
+    function RenderUtils() {
+    }
+    RenderUtils.beautifyFloat = function (num) {
+        var absVal = Math.abs(num);
+        if (absVal < 1)
+            return num.toFixed(3);
+        if (absVal < 10)
+            return num.toFixed(2);
+        if (absVal < 100)
+            return num.toFixed(1);
+        if (absVal < 10000)
+            return num.toFixed(0);
+        if (absVal < 100000)
+            return Math.floor(num / 1000).toFixed(1) + "K";
+        if (absVal < 1000000)
+            return Math.floor(num / 1000).toFixed(0) + "K";
+        if (absVal < 10000000)
+            return Math.floor(num / 1000000).toFixed(1) + "M";
+        return Math.floor(num / 1000000).toFixed(1) + "M";
+    };
+    return RenderUtils;
+})();
 var ResourceRequirement = (function () {
     function ResourceRequirement(resources, quantaties) {
         this.resources = resources;
@@ -500,7 +532,7 @@ var ResourcesRenderer = (function () {
                 html += "/" + this.engine.resources[i].cap;
             html += "</td><td>";
             if (this.engine.resources[i].rate != 0)
-                html += "(" + this.engine.resources[i].rate * 1000 + ")";
+                html += "(" + RenderUtils.beautifyFloat(this.engine.resources[i].rate * 1000) + ")";
             html += "</td></tr>\n";
         }
         html += "</table>";

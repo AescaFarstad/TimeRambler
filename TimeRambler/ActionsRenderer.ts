@@ -6,28 +6,41 @@
     private root: HTMLElement;
     private engine: Engine;
     private input: IInput;
+    private list: HTMLElement;
+    private mapping: Object;
 
     public setRoot(root: HTMLElement): void {
         this.root = root;
     }
 
-    public update(timeDelta: number): void {
+    public update(timeDelta: number): void {/*
         var parentNode: Node = this.root.parentNode;
         this.root.parentNode.removeChild(this.root);
         this.root.innerHTML = "";
         this.root.appendChild(HelperHTML.element("h3", "", "Actions:"));
-        var list: HTMLOListElement = <HTMLOListElement> HelperHTML.element("ol", "actionList");
+        var list: HTMLOListElement = <HTMLOListElement> HelperHTML.element("ol", "actionList");*/
         for (var i: number = 0; i < this.engine.actions.length; i++) {
-            list.appendChild(this.actionToHtml(this.engine.actions[i], this.input));
-        }
+            var isRemoved: boolean = false;
+            if (!this.engine.actions[i].viewData.isValid(this.engine.actions[i], this.engine) && this.engine.actions[i].viewData.isRendered) {
+                this.list.removeChild(this.engine.actions[i].viewData.element);
+                isRemoved = true;
+            }
+            if (isRemoved || !this.engine.actions[i].viewData.isRendered) {
+                var element: HTMLElement = this.actionToHtml(this.engine.actions[i], this.input);
+                this.engine.actions[i].viewData.setRendered(this.engine.actions[i], element, this.engine);
+                this.list.appendChild(element);
+            }
+        }/*
         this.root.appendChild(list);
-        parentNode.appendChild(this.root);
+        parentNode.appendChild(this.root);*/
     }
 
     public load(root: HTMLElement, engine: Engine, input:IInput): void {
         this.root = root;
         this.engine = engine;
         this.input = input;
+        this.list = <HTMLElement> root.getElementsByClassName("actionList")[0];
+        this.mapping = {};
     }
 
     private actionToHtml(action: Action, input: IInput): HTMLElement {
@@ -52,28 +65,13 @@
             div.appendChild(innerDiv);
         }
         var buttonDiv: HTMLElement = HelperHTML.element("div", "actionButtonContainer");
-        var button: HTMLButtonElement = <HTMLButtonElement> HelperHTML.element("button", "actionButton", "Start");
+        var button: HTMLButtonElement = <HTMLButtonElement> HelperHTML.element("button", "actionButton", action.isStarted ? "Cancel" : "Start");
         if (input)
-            button.onclick = () => input.activateAction(action);
+            button.onclick = action.isStarted ? () => input.cancelAction(action) : () => input.activateAction(action);
         buttonDiv.appendChild(button);
         div.appendChild(buttonDiv);
         outerElement.appendChild(div);
 
-
-        /*
-        this.root.appendChild(document.createElement("div",
-
-        var result: string = "<div class=\"actionHeader_" + availability + "\"><span class=\"actionHeaderText_" + availability + "\">" + 
-                            action.name + "</span></div><div class=\"actionContent\">" +
-                            "<div class=\"actionContentText\">Pop: " + action.pop + "</div> <div class=\"actionContentText\">Time: " + Math.ceil(action.time / 1000) + " sec.</div>";
-        if (!action.resources.isEmpty) {
-            result += "<div class=\"actionContentText\">Requires:</div>";
-            for (var i: number = 0; i < action.resources.resources.length; i++) {
-                var resource: Stat = this.engine.resourcesById[action.resources.resources[i]];
-                result += "<div class=\"actionContent_Requirement\">" + resource.name + ": " + action.resources.quantaties[i] + "</div>";
-            }
-        }
-        result += "<div class=\"actionButtonContainer\"><button class=\"actionButton\"> Start </button></div>";*/
         return outerElement;
     }
 } 

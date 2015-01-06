@@ -20,7 +20,7 @@
                 html += "/" + this.engine.resources[i].cap;
             html += "</td><td>";
             if (this.engine.resources[i].rate != 0)
-                html += "(" + this.engine.resources[i].rate * 1000 + ")";
+                html += "(" + RenderUtils.beautifyFloat(this.engine.resources[i].rate * 1000) + ")";
             html += "</td></tr>\n";
         }
         html += "</table>";
@@ -31,4 +31,5 @@
         this.root = root;
         this.engine = engine;
     }
+    
 }   

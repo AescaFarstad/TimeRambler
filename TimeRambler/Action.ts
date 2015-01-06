@@ -8,6 +8,7 @@
     private _isStarted: boolean;
     public resources: ResourceRequirement;
     public outcomes: Array<ActionOutcome>;
+    public viewData: ActionViewData;
 
 
     constructor(id: string, name: string, pop: number, time: number, resources: ResourceRequirement, outcomes: Array<ActionOutcome>) {
@@ -17,6 +18,7 @@
         this.time = time;
         this.resources = resources;
         this.outcomes = outcomes;
+        this.viewData = new ActionViewData();
     }
 
     public isAvailable(engine:Engine): boolean{
@@ -43,7 +45,7 @@
     }
 
     public cancel(engine: Engine): void {
-        engine.resourcesById["unemployed"].modify(-this.pop);
+        engine.resourcesById["unemployed"].modify(this.pop);
         this.resources.giveBack(engine);
         this._isStarted = false;
     }

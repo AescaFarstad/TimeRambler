@@ -27,6 +27,7 @@
     <TypeScriptCompile Include="Action.ts" />
     <TypeScriptCompile Include="ActionOutcome.ts" />
     <TypeScriptCompile Include="ActionsRenderer.ts" />
+    <TypeScriptCompile Include="ActionViewData.ts" />
     <TypeScriptCompile Include="app.ts" />
     <TypeScriptCompile Include="Binder.ts" />
     <TypeScriptCompile Include="DataSource.ts" />
@@ -38,6 +39,7 @@
     <TypeScriptCompile Include="Logic.ts" />
     <TypeScriptCompile Include="Modifier.ts" />
     <TypeScriptCompile Include="Renderer.ts" />
+    <TypeScriptCompile Include="RenderUtils.ts" />
     <TypeScriptCompile Include="ResourceRequirement.ts" />
     <TypeScriptCompile Include="ResourcesRenderer.ts" />
     <TypeScriptCompile Include="Stat.ts" />
