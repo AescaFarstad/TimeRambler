@@ -10,7 +10,7 @@
 
     public isMet(engine: Engine): boolean {
         for (var i: number = 0; i < this.resources.length; i++) {
-            if (engine.resourcesById[this.resources[i]].value < this.quantaties[i])
+            if (engine.resourcesById(this.resources[i]).value < this.quantaties[i])
                 return false; 
         }
         return true;
@@ -18,13 +18,13 @@
 
     public subtractFrom(engine: Engine): void {
         for (var i: number = 0; i < this.resources.length; i++) {
-            engine.resourcesById[this.resources[i]].modify(-this.quantaties[i]);
+            engine.resourcesById(this.resources[i]).modify(-this.quantaties[i], engine);
         }
     }
 
     public giveBack(engine: Engine): void {
         for (var i: number = 0; i < this.resources.length; i++) {
-            engine.resourcesById[this.resources[i]].modify(this.quantaties[i]);
+            engine.resourcesById(this.resources[i]).modify(this.quantaties[i], engine);
         }
     }
 

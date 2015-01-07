@@ -2,21 +2,63 @@
     font-family: 'Segoe UI', sans-serif;
 }
 
-
 .resourceTable {
     padding: 4px 7px 2px 4px;
     margin-top: -20px;
 }
 
+.resourcesPanel {
+    width: 300px;
+}
+
+.debugInfoPanel {
+}
+
+.actionsPanel {
+    width: 320px;
+    float:left;
+}
+
+.debugLogPanel {
+}
+
+.gameLog {
+    float:left;
+    max-width: 400px;
+    min-width: 300px;
+    background-color:azure;
+}
+
+.debugLog {
+    float:left;
+    max-width: 400px;
+    min-width: 300px;
+    background-color:azure;
+}
+
 .action {
-    max-width:300px;
+    margin: 10px;
+    width:300px;
     cursor:default;
+}
+
+.actionList {
+    list-style-type: none;
+    padding:0px;
+}
+
+.actionCanvas {
+    height:24px;
+    width: 100%;
+    position: fixed;
+    top: 0;
 }
 
 .actionHeader_Available {
     border: 2px solid black;
     background-color: #90ff87;
     text-align: center;
+    height: 24px;
 }
 
 .actionHeaderText_Available {
@@ -24,10 +66,23 @@
     text-align:center;
 }
 
+.actionHeaderText_Progress {
+    font-weight: bold;
+    text-align:center;
+}
+
 .actionHeader_Unavailable {
     border: 2px solid black;
     background-color: #ff9087;
+    text-align: center;    
+    height: 24px;
+}
+
+.actionHeader_Progress {
+    border: 2px solid black;
+    background-color: #87abff;
     text-align: center;
+    height: 24px;
 }
 
 .actionHeaderText_Unavailable {
@@ -55,5 +110,10 @@
 
 .actionButtonContainer {
     text-align: center;
+}
+
+.gameLogEntry {
+    background-color:beige;
+    margin: 3px;
 }
 

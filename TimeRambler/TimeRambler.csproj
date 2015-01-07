@@ -26,6 +26,7 @@
   <ItemGroup>
     <TypeScriptCompile Include="Action.ts" />
     <TypeScriptCompile Include="ActionOutcome.ts" />
+    <TypeScriptCompile Include="ActionOutcomes.ts" />
     <TypeScriptCompile Include="ActionsRenderer.ts" />
     <TypeScriptCompile Include="ActionViewData.ts" />
     <TypeScriptCompile Include="app.ts" />
@@ -36,7 +37,9 @@
     <TypeScriptCompile Include="HelperHTML.ts" />
     <TypeScriptCompile Include="IInput.ts" />
     <TypeScriptCompile Include="Input.ts" />
+    <TypeScriptCompile Include="Logger.ts" />
     <TypeScriptCompile Include="Logic.ts" />
+    <TypeScriptCompile Include="LogRenderer.ts" />
     <TypeScriptCompile Include="Modifier.ts" />
     <TypeScriptCompile Include="Renderer.ts" />
     <TypeScriptCompile Include="RenderUtils.ts" />

@@ -1,9 +1,9 @@
 ﻿interface IInput {
-    timeScaleDown();
-    timeScaleNormal();
-    timeScaleUp();
-    timeScaleStop();
-    activateAction(action:Action);
-    cancelAction(action:Action);
+    timeScaleDown():void;
+    timeScaleNormal(): void;
+    timeScaleUp(): void;
+    timeScaleStop(): void;
+    activateAction(action: Action): void;
+    cancelAction(action: Action): void;
 
 }  

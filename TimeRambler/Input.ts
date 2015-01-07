@@ -9,30 +9,30 @@
         this.engine = engine;
     }
 
-    public timeScaleDown() {
+    public timeScaleDown(): void {
         this.engine.numericScale--;
         this.updateTimeScales();
     }
-    public timeScaleNormal() {
+    public timeScaleNormal(): void {
         this.engine.numericScale = 0;
         this.updateTimeScales();
     }
-    public timeScaleUp() {
+    public timeScaleUp(): void {
         this.engine.numericScale++;
         this.updateTimeScales();
     }
-    public timeScaleStop() {
+    public timeScaleStop(): void {
         this.engine.timeScale = 0;
     }
     private updateTimeScales(): void {
         this.engine.timeScale = 1 + this.engine.numericScale / 5;
         this.engine.stepScale = Math.pow(0.9, this.engine.numericScale);
     }
-    private activateAction(action: Action): void {
+    public activateAction(action: Action): void {
         if (action.isAvailable(this.engine))
             action.start(this.engine);
     }
-    private cancelAction(action: Action): void {
+    public cancelAction(action: Action): void {
         if (action.isStarted)
             action.cancel(this.engine);
     }

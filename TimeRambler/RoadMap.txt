@@ -1,15 +1,39 @@
-﻿0)
+﻿0.001
 	engine ouline
 
-1)	Debug Panel
+0.002
+	Debug Panel
 		time elapsed
-2)
+0.003
 	Stats Panel
 		pop
 		food
-		wood
-3)
-	Projects Panel
+0.004
+	Actions Panel
 		grow
+
+0.005
+	Actions Panel
 		small hunt
 		great hunt
+
+0.006
+	AI
+		automated hunting when low on food
+
+0.007
+	Log Panel
+		action outcomes
+		death of citizens
+		AI actions
+
+== I'm here ==
+
+0.008
+	Actions
+		Last outcome
+		Known outcomes
+0.008
+	Actions
+		collapsible
+		background gradient animation

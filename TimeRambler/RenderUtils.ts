@@ -21,4 +21,13 @@
         return Math.floor(num / 1000000).toFixed(1) + "M";
     }
 
+    public static beautifyInt(num: number): string {
+        var absVal: number = Math.abs(num);
+        if (absVal < 1000)
+            return num.toFixed(0);
+        if (absVal < 1000000)
+            return Math.floor(num / 1000).toFixed(0) + "K";
+        return Math.floor(num / 1000000).toFixed(0) + "M";
+    }
+
 }   

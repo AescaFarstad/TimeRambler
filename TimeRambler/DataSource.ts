@@ -15,63 +15,100 @@
 
         var unemployedResource: Stat = new Stat("unemployed", "unemployed");
 
-        
+        unemployedResource.onValueChanged = this.unemployedRule;
         unemployedResource.isDecimal = false;
         unemployedResource.hasCap = false;
         engine.addResource(unemployedResource);
 
         var foodResource: Stat = new Stat("food", "food");
-        foodResource.setValue(50, engine);
-        foodResource.insertCapModifier(new Modifier("init", 50, 0));
+        foodResource.setValue(15, engine);
+        foodResource.insertCapModifier(new Modifier("init", 20, 0));
+        foodResource.insertCapModifier(new Modifier("pop", 0, 0));
         foodResource.insertRateModifier(new Modifier("pop", 0, 0));
         engine.addResource(foodResource);
 
         popResource.onValueChanged = this.popRule;
-        popResource.setValue(5, engine);
+        popResource.setValue(3, engine);
 
         engine.addRule(this.foodRule);
 
-        var growFailOutcome: ActionOutcome = new ActionOutcome("fail", 45, this.growFailExec);
-        var growSuccessOutcome: ActionOutcome = new ActionOutcome("success", 55, this.growSuccessExec);
+        var woodResource: Stat = new Stat("wood", "wood");
+        woodResource.insertCapModifier(new Modifier("init", 50, 0));
+        engine.addResource(woodResource);
 
-        var growAction: Action = new Action("grow", "Grow", 2, 5 * 1000, new ResourceRequirement(["food"], [10]), [growFailOutcome, growSuccessOutcome]);
+        //Grow
+        var growFailOutcome: ActionOutcome = new ActionOutcome("fail", 35, ActionOutcomes.growFailExec);
+        var growSuccessOutcome: ActionOutcome = new ActionOutcome("success", 65, ActionOutcomes.growSuccessExec);
+
+        var growAction: Action = new Action("grow", "Grow", 2, 10 * 1000, new ResourceRequirement(["food"], [10]), [growFailOutcome, growSuccessOutcome]);
         engine.addAction(growAction);
+
+        //Small hunt
+        var smallHuntFailOutcome: ActionOutcome = new ActionOutcome("fail", 15, ActionOutcomes.smallHuntFailExec);
+        var smallHuntMinorSuccess1Outcome: ActionOutcome = new ActionOutcome("minorSuccess1", 10, ActionOutcomes.smallHuntMinorSuccess1Exec);
+        var smallHuntMinorSuccess2Outcome: ActionOutcome = new ActionOutcome("minorSuccess2", 10, ActionOutcomes.smallHuntMinorSuccess2Exec);
+        var smallHuntMinorSuccess3Outcome: ActionOutcome = new ActionOutcome("minorSuccess3", 10, ActionOutcomes.smallHuntMinorSuccess3Exec);
+        var smallHuntMajorSuccess1Outcome: ActionOutcome = new ActionOutcome("majoruccess1", 15, ActionOutcomes.smallHuntMajorSuccess1Exec);
+        var smallHuntMajorSuccess2Outcome: ActionOutcome = new ActionOutcome("majoruccess2", 15, ActionOutcomes.smallHuntMajorSuccess2Exec);
+
+        var smallHuntAction: Action = new Action("smallHunt", "Hunt", 3, 7 * 1000, new ResourceRequirement([], []), [smallHuntFailOutcome,
+            smallHuntMinorSuccess1Outcome, smallHuntMinorSuccess2Outcome, smallHuntMinorSuccess3Outcome, smallHuntMajorSuccess1Outcome, smallHuntMajorSuccess2Outcome]);
+        engine.addAction(smallHuntAction);
+
+        //Great hunt
+        var greatHuntOutcome: ActionOutcome = new ActionOutcome("success", 1, ActionOutcomes.greatHunt);
+
+        var greatHuntAction: Action = new Action("greatHunt", "Great Hunt", 6, 30 * 1000, new ResourceRequirement(["wood"], [10]), [greatHuntOutcome]);
+        engine.addAction(greatHuntAction);
+
+        engine.addRule(this.huntingRule);
 
     }
 
     private popRule(stat: Stat, engine: Engine, delta:number): void {
-        engine.resourcesById["food"].editRateModifier("pop", -stat.value * DataSource.foorPerPop / 1000, 0);
-        engine.resourcesById["unemployed"].setValue(engine.resourcesById["unemployed"].value + delta);
+        engine.resourcesById("food").editRateModifier("pop", -stat.value * DataSource.foorPerPop / 1000, 0);
+        engine.resourcesById("unemployed").setValue(engine.resourcesById("unemployed").value + delta, engine);
+        engine.resourcesById("food").editCapModifier("pop", stat.value * 10, 0);
     }
 
     //if there are not enough workers some actions must be canceled
     private unemployedRule(stat: Stat, engine: Engine, delta: number): void {
         if (stat.value < 0) {
             for (var i: number = 0; i < engine.actions.length; i++) {
-                if (engine.actions[i].isStarted && engine.actions[i].pop > 0)
+                if (engine.actions[i].isStarted && engine.actions[i].pop > 0) {
+                    logGame("The recent decrease in the number of available workers has made it impossible to finish " + engine.actions[i].name);
                     engine.actions[i].cancel(engine);
+                    return;
+                }
             }
         }
     }
 
     //if there is not enough food people must die
     private foodRule(engine: Engine): void{
-        var food: Stat = engine.resourcesById["food"];
-        var pop: Stat = engine.resourcesById["pop"];
+        var food: Stat = engine.resourcesById("food");
+        var pop: Stat = engine.resourcesById("pop");
         var popVal: number = pop.value;
         while (food.value < 0 && popVal > 0) {
+            logGame("Starvation has claimed a villager! <b>Population decreased by 1.</b>")
             food.setValue(food.value + DataSource.canibalicFood, engine);
             popVal -= 1;
         }
         pop.setValue(popVal, engine);
     }
 
-    private growFailExec(engine: Engine): void {
-        engine.resourcesById["pop"].modify(-1, engine);
+    //if food is low - hunt
+    private huntingRule(engine: Engine): void {
+        var food: Stat = engine.resourcesById("food");
+        if (food.value < 10) {
+            var smallHunt: Action = engine.actionsById("smallHunt");
+            if (!smallHunt.isStarted && smallHunt.isAvailable(engine)) {
+                logGame("The villagers have noticed the shortage of food and decided to go hunting.");
+                smallHunt.start(engine);
+            }
+        }
     }
 
-    private growSuccessExec(engine: Engine): void {
-        engine.resourcesById["pop"].modify(1, engine);
-    }
+    
 
 }  

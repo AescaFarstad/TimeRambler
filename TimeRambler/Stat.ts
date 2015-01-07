@@ -74,13 +74,13 @@
         this._rateCache = add * (multi + 1);
     }
 
-    public editCapModifier(key: string, add: number, multi: number): void {
+    public editCapModifier(key: string, newAdd: number, newMulti: number): void {
         var add: number = 0;
         var multi: number = 0;
         for (var i: number = 0; i < this.capModifiers.length; i++) {
             if (this.capModifiers[i].key == key) {
-                this.capModifiers[i].add = add;
-                this.capModifiers[i].multi = multi;
+                this.capModifiers[i].add = newAdd;
+                this.capModifiers[i].multi = newMulti;
             }
             add += this.capModifiers[i].add;
             multi += this.capModifiers[i].multi;

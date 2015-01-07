@@ -4,6 +4,7 @@
     }
 
     public element: HTMLElement;
+    public headerElement: HTMLElement;
     public isRendered: Boolean;
     public isStarted: Boolean;
     public isAvailable: Boolean;

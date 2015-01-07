@@ -23,8 +23,8 @@
     }
 
     private _resourcesById: Object;
-    public get resourcesById(): Object {
-        return this._resourcesById;
+    public resourcesById(id:string): Stat {
+        return this._resourcesById[id];
     }
 
     private _actions: Array<Action>;
@@ -33,8 +33,8 @@
     }
 
     private _actionsById: Object;
-    public get actionsById(): Object {
-        return this._actionsById;
+    public actionsById(id: string): Action {
+        return this._actionsById[id];
     }
 
     private _rules: Array<Function>;
@@ -49,7 +49,7 @@
             this._resources[i].updateStart(timeDelta);
         }
 
-        for (var i: number = 0; i < this._rules.length; i++) {
+        for (var i: number = 0; i < this._actions.length; i++) {
             if (this._actions[i].isStarted) {
 
                 this._actions[i].update(timeDelta);
@@ -69,7 +69,7 @@
 
     public addResource(resource: Stat): void {
         this._resources.push(resource);
-        this.resourcesById[resource.id] = resource;
+        this._resourcesById[resource.id] = resource;
     }
 
     public addAction(action: Action): void {
