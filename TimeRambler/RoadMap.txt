@@ -27,13 +27,17 @@
 		death of citizens
 		AI actions
 
-== I'm here ==
-
 0.008
 	Actions
 		Last outcome
 		Known outcomes
-0.008
+
+== I'm here ==
+
+0.009
 	Actions
 		collapsible
 		background gradient animation
+0.010
+	gradual unlock of actions and resources
+	Research

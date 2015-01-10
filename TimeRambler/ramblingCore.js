@@ -55,6 +55,13 @@ var Action = (function () {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(Action.prototype, "outcomeHistory", {
+        get: function () {
+            return this._outcomeHistory;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Action.prototype.outcomeById = function (outcomeId) {
         for (var i = 0; i < this.outcomes.length; i++) {
             if (this.outcomes[i].id == outcomeId)
@@ -96,23 +103,30 @@ var Action = (function () {
             console.log("WARNING: action outcomes redirection chain too long!", this.id);
         }
         else {
+            if (this._outcomeHistory == null) {
+                this._outcomeHistory = {};
+            }
+            if (this._outcomeHistory[outcome.id] != null)
+                this._outcomeHistory[outcome.id].count++;
+            else
+                this._outcomeHistory[outcome.id] = { count: 1, entry: outcome.historyEntry };
             this._lastOutcome = outcome;
         }
     };
     return Action;
 })();
 var ActionOutcome = (function () {
-    function ActionOutcome(id, weight, exec) {
+    function ActionOutcome(id, weight, exec, historyEntry) {
         this.weight = weight;
         this.exec = exec;
         this.id = id;
+        this.historyEntry = historyEntry;
     }
     return ActionOutcome;
 })();
 var ActionOutcomes = (function () {
     function ActionOutcomes() {
     }
-    //grow
     ActionOutcomes.growFailExec = function (action, outcome, engine) {
         if (action.lastOutcome == outcome) {
             logEngine("grow redirected to success because lastOutcome == outcome");
@@ -132,7 +146,6 @@ var ActionOutcomes = (function () {
         logGame("Family grows. <b>Population increased by 1.</b>");
         engine.resourcesById("pop").modify(1, engine);
     };
-    //small hunt
     ActionOutcomes.smallHuntFailExec = function (action, outcome, engine) {
         if (action.lastOutcome == outcome) {
             logEngine("small hunt redirected to success because lastOutcome == outcome");
@@ -154,7 +167,7 @@ var ActionOutcomes = (function () {
             engine.resourcesById("pop").modify(-1, engine);
         }
         else {
-            logGame("The hunt was a minor success. <b>Food +20; Wood + 1.</b>");
+            logGame("The hunt was a minor success. <b>Food +20; Wood + 1.</b> The hunters are injured but overall fine.");
             logEngine("pop on small hunt didn't die because population is too low");
         }
         engine.resourcesById("food").modify(20, engine);
@@ -166,7 +179,7 @@ var ActionOutcomes = (function () {
             engine.resourcesById("pop").modify(-1, engine);
         }
         else {
-            logGame("The hunt was a minor success. <b>Food +30;</b>");
+            logGame("The hunt was a minor success. <b>Food +30.</b> The hunters are injured but overall fine.");
             logEngine("pop on small hunt didn't die because population is too low");
         }
         engine.resourcesById("food").modify(30, engine);
@@ -177,7 +190,7 @@ var ActionOutcomes = (function () {
             engine.resourcesById("pop").modify(-1, engine);
         }
         else {
-            logGame("The hunt was a minor success. <b>Food +40.</b>");
+            logGame("The hunt was a minor success. <b>Food +40.</b> The hunters are injured but overall fine.");
             logEngine("pop on small hunt didn't die because population is too low");
         }
         engine.resourcesById("food").modify(40, engine);
@@ -192,12 +205,23 @@ var ActionOutcomes = (function () {
         engine.resourcesById("food").modify(50, engine);
         engine.resourcesById("wood").modify(1, engine);
     };
-    //great hunt
     ActionOutcomes.greatHunt = function (action, outcome, engine) {
         logGame("The Great Hunt was almost failed due to coordination issues. It takes both great courage and strength to combat such large animals. You have played the key part here and everybody recognizes your contribution. <b>Food +150; Wood +25</b>");
         engine.resourcesById("food").modify(150, engine);
         engine.resourcesById("wood").modify(25, engine);
     };
+    //grow
+    ActionOutcomes.growFailHistoryEntry = "Birth complications. Don't ask.";
+    ActionOutcomes.growSuccessHistoryEntry = "The wonder of life has happened in it's full glory.";
+    //small hunt
+    ActionOutcomes.smallHuntFailHistoryEntry = "Total failure.";
+    ActionOutcomes.smallHuntMinorSuccess1HistoryEntry = "Minor success. Hunters sustained injuries. <b>Food +20; Wood + 1.</b>";
+    ActionOutcomes.smallHuntMinorSuccess2HistoryEntry = "Minor success. Hunters sustained injuries. <b>Food +30.</b>";
+    ActionOutcomes.smallHuntMinorSuccess3HistoryEntry = "Minor success. Hunters sustained injuries. <b>Food +40.</b>";
+    ActionOutcomes.smallHuntMajorSuccess1HistoryEntry = "Success! <b>Food +40; Wood +3.</b>";
+    ActionOutcomes.smallHuntMajorSuccess2HistoryEntry = "Success! <b>Food +50; Wood +1.</b>";
+    //great hunt
+    ActionOutcomes.greatHuntHistoryEntry = "You are not supposed to ever read this. Unsee now!";
     return ActionOutcomes;
 })();
 var ActionsRenderer = (function () {
@@ -232,13 +256,12 @@ var ActionsRenderer = (function () {
         this.engine = engine;
         this.input = input;
         this.list = root.getElementsByClassName("actionList")[0];
-        this.mapping = {};
     };
     ActionsRenderer.prototype.updateProgress = function (action) {
         action.viewData.headerElement.innerText = [action.name, " ", (action.progress * 100).toFixed(0), "% ( ", RenderUtils.beautifyInt(action.timeLeft / 1000), " sec.left)"].join("");
     };
     ActionsRenderer.prototype.actionToHtml = function (action, input) {
-        var outerElement = HelperHTML.element("li", "action");
+        var outerElement = HelperHTML.element("li", "action testTooltipable");
         if (action.isStarted) {
             var div = HelperHTML.element("div", "actionHeader_Progress");
             var canvas = HelperHTML.element("canvas", "actionCanvas");
@@ -274,6 +297,24 @@ var ActionsRenderer = (function () {
         buttonDiv.appendChild(button);
         div.appendChild(buttonDiv);
         outerElement.appendChild(div);
+        if (action.outcomeHistory) {
+            var tooptil = HelperHTML.element("div", "testTooltip");
+            var tHeader = HelperHTML.element("div", "tooltipHeader", "Known possible outcomes");
+            var tContent = HelperHTML.element("div", "tooltipContent");
+            var tTable = HelperHTML.element("table", "tooltipTable");
+            tTable.cellSpacing = "15";
+            for (var outcome in action.outcomeHistory) {
+                var row = tTable.insertRow();
+                var cell = row.insertCell();
+                cell.innerHTML = action.outcomeHistory[outcome].count;
+                cell = row.insertCell();
+                cell.innerHTML = action.outcomeHistory[outcome].entry;
+            }
+            tContent.appendChild(tTable);
+            tooptil.appendChild(tHeader);
+            tooptil.appendChild(tContent);
+            outerElement.appendChild(tooptil);
+        }
         return outerElement;
     };
     return ActionsRenderer;
@@ -343,21 +384,21 @@ var DataSource = (function () {
         woodResource.insertCapModifier(new Modifier("init", 50, 0));
         engine.addResource(woodResource);
         //Grow
-        var growFailOutcome = new ActionOutcome("fail", 35, ActionOutcomes.growFailExec);
-        var growSuccessOutcome = new ActionOutcome("success", 65, ActionOutcomes.growSuccessExec);
+        var growFailOutcome = new ActionOutcome("fail", 35, ActionOutcomes.growFailExec, ActionOutcomes.growFailHistoryEntry);
+        var growSuccessOutcome = new ActionOutcome("success", 65, ActionOutcomes.growSuccessExec, ActionOutcomes.growSuccessHistoryEntry);
         var growAction = new Action("grow", "Grow", 2, 10 * 1000, new ResourceRequirement(["food"], [10]), [growFailOutcome, growSuccessOutcome]);
         engine.addAction(growAction);
         //Small hunt
-        var smallHuntFailOutcome = new ActionOutcome("fail", 15, ActionOutcomes.smallHuntFailExec);
-        var smallHuntMinorSuccess1Outcome = new ActionOutcome("minorSuccess1", 10, ActionOutcomes.smallHuntMinorSuccess1Exec);
-        var smallHuntMinorSuccess2Outcome = new ActionOutcome("minorSuccess2", 10, ActionOutcomes.smallHuntMinorSuccess2Exec);
-        var smallHuntMinorSuccess3Outcome = new ActionOutcome("minorSuccess3", 10, ActionOutcomes.smallHuntMinorSuccess3Exec);
-        var smallHuntMajorSuccess1Outcome = new ActionOutcome("majoruccess1", 15, ActionOutcomes.smallHuntMajorSuccess1Exec);
-        var smallHuntMajorSuccess2Outcome = new ActionOutcome("majoruccess2", 15, ActionOutcomes.smallHuntMajorSuccess2Exec);
+        var smallHuntFailOutcome = new ActionOutcome("fail", 15, ActionOutcomes.smallHuntFailExec, ActionOutcomes.smallHuntFailHistoryEntry);
+        var smallHuntMinorSuccess1Outcome = new ActionOutcome("minorSuccess1", 10, ActionOutcomes.smallHuntMinorSuccess1Exec, ActionOutcomes.smallHuntMinorSuccess1HistoryEntry);
+        var smallHuntMinorSuccess2Outcome = new ActionOutcome("minorSuccess2", 10, ActionOutcomes.smallHuntMinorSuccess2Exec, ActionOutcomes.smallHuntMinorSuccess2HistoryEntry);
+        var smallHuntMinorSuccess3Outcome = new ActionOutcome("minorSuccess3", 10, ActionOutcomes.smallHuntMinorSuccess3Exec, ActionOutcomes.smallHuntMinorSuccess3HistoryEntry);
+        var smallHuntMajorSuccess1Outcome = new ActionOutcome("majoruccess1", 15, ActionOutcomes.smallHuntMajorSuccess1Exec, ActionOutcomes.smallHuntMajorSuccess1HistoryEntry);
+        var smallHuntMajorSuccess2Outcome = new ActionOutcome("majoruccess2", 15, ActionOutcomes.smallHuntMajorSuccess2Exec, ActionOutcomes.smallHuntMajorSuccess2HistoryEntry);
         var smallHuntAction = new Action("smallHunt", "Hunt", 3, 7 * 1000, new ResourceRequirement([], []), [smallHuntFailOutcome, smallHuntMinorSuccess1Outcome, smallHuntMinorSuccess2Outcome, smallHuntMinorSuccess3Outcome, smallHuntMajorSuccess1Outcome, smallHuntMajorSuccess2Outcome]);
         engine.addAction(smallHuntAction);
         //Great hunt
-        var greatHuntOutcome = new ActionOutcome("success", 1, ActionOutcomes.greatHunt);
+        var greatHuntOutcome = new ActionOutcome("success", 1, ActionOutcomes.greatHunt, ActionOutcomes.greatHuntHistoryEntry);
         var greatHuntAction = new Action("greatHunt", "Great Hunt", 6, 30 * 1000, new ResourceRequirement(["wood"], [10]), [greatHuntOutcome]);
         engine.addAction(greatHuntAction);
         engine.addRule(this.huntingRule);

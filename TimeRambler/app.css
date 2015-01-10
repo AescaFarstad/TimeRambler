@@ -117,3 +117,39 @@
     margin: 3px;
 }
 
+.testTooltipable {
+    position:relative;
+}
+
+.testTooltipable div.testTooltip{
+  margin-left: -999em;
+  position: absolute;
+}
+
+.testTooltipable:hover div.testTooltip {
+  position: absolute;
+  left: 300px;
+  top: 0px;
+  z-index: 99;
+  margin-left: 0;
+  width: 350px;
+}
+
+.tooltipHeader {
+    padding: 0.5em 0.5em 0.5em 0.5em;
+    text-align: center;
+    background: #b6a75f;
+    color:white;
+    font-size:larger;
+    font-weight:bold;
+}
+
+.tooltipContent {
+    padding: 0.5em 0.8em 0.8em 1em;
+    background: #716a4a;
+    color:white;
+}
+
+.tooltipTable {
+    
+}

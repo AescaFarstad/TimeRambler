@@ -7,7 +7,6 @@
     private engine: Engine;
     private input: IInput;
     private list: HTMLElement;
-    private mapping: Object;
 
     public setRoot(root: HTMLElement): void {
         this.root = root;
@@ -40,7 +39,6 @@
         this.engine = engine;
         this.input = input;
         this.list = <HTMLElement> root.getElementsByClassName("actionList")[0];
-        this.mapping = {};
     }
 
     private updateProgress(action: Action): void {
@@ -49,7 +47,7 @@
 
     private actionToHtml(action: Action, input: IInput): HTMLElement {
 
-        var outerElement: HTMLElement = HelperHTML.element("li", "action");
+        var outerElement: HTMLElement = HelperHTML.element("li", "action testTooltipable");
         if (action.isStarted) {
             var div: HTMLElement = HelperHTML.element("div", "actionHeader_Progress");
             var canvas: HTMLElement = HelperHTML.element("canvas", "actionCanvas");
@@ -88,6 +86,25 @@
         buttonDiv.appendChild(button);
         div.appendChild(buttonDiv);
         outerElement.appendChild(div);
+        if (action.outcomeHistory) {
+            var tooptil: HTMLElement = HelperHTML.element("div", "testTooltip");
+            var tHeader: HTMLElement = HelperHTML.element("div", "tooltipHeader", "Known possible outcomes");
+            var tContent: HTMLElement = HelperHTML.element("div", "tooltipContent");
+            var tTable: HTMLTableElement = <HTMLTableElement> HelperHTML.element("table", "tooltipTable");
+            tTable.cellSpacing = "15";
+            for (var outcome in action.outcomeHistory) {
+                var row: HTMLTableRowElement = <HTMLTableRowElement> tTable.insertRow();
+                var cell: HTMLTableCellElement = <HTMLTableCellElement> row.insertCell();
+                cell.innerHTML = action.outcomeHistory[outcome].count;
+                cell = <HTMLTableCellElement> row.insertCell();
+                cell.innerHTML = action.outcomeHistory[outcome].entry;
+            }
+            tContent.appendChild(tTable);
+            tooptil.appendChild(tHeader);
+            tooptil.appendChild(tContent);
+            outerElement.appendChild(tooptil);
+        }
+        
 
         return outerElement;
     }

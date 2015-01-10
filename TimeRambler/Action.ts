@@ -10,6 +10,7 @@
     public outcomes: Array<ActionOutcome>;
     public viewData: ActionViewData;
     private _lastOutcome: ActionOutcome;
+    private _outcomeHistory: Object;
 
 
     constructor(id: string, name: string, pop: number, time: number, resources: ResourceRequirement, outcomes: Array<ActionOutcome>) {
@@ -57,6 +58,10 @@
         return this._timeLeft;
     }
 
+    public get outcomeHistory(): Object {
+        return this._outcomeHistory;
+    }
+
     public outcomeById(outcomeId: string): ActionOutcome {
         for (var i: number = 0; i < this.outcomes.length; i++) {
             if (this.outcomes[i].id == outcomeId)
@@ -93,13 +98,20 @@
         var redirectOutcome:ActionOutcome = outcome.exec(this, outcome, engine);
         if (redirectOutcome != null && depth < 10) {
             console.log("Action outcome redirected from " + outcome.id + " to " + redirectOutcome.id);
-            this.execOutcome(redirectOutcome, engine, depth + 1);
+            this.execOutcome(redirectOutcome, engine, depth + 1);            
             return;
         }
         else if (depth >= 10) {
             console.log("WARNING: action outcomes redirection chain too long!", this.id);
         }
-        else{
+        else {
+            if (this._outcomeHistory == null) {
+                this._outcomeHistory = {};
+            }
+            if (this._outcomeHistory[outcome.id] != null)
+                this._outcomeHistory[outcome.id].count++;
+            else
+                this._outcomeHistory[outcome.id] = { count: 1, entry: outcome.historyEntry };
             this._lastOutcome = outcome;
         }
     }
