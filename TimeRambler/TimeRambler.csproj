@@ -24,29 +24,29 @@
     <Content Include="web.config" />
   </ItemGroup>
   <ItemGroup>
-    <TypeScriptCompile Include="Action.ts" />
-    <TypeScriptCompile Include="ActionOutcome.ts" />
-    <TypeScriptCompile Include="ActionOutcomes.ts" />
-    <TypeScriptCompile Include="ActionsRenderer.ts" />
-    <TypeScriptCompile Include="ActionViewData.ts" />
+    <TypeScriptCompile Include="engine\Action.ts" />
+    <TypeScriptCompile Include="engine\ActionOutcome.ts" />
+    <TypeScriptCompile Include="dataSource\ActionOutcomes.ts" />
+    <TypeScriptCompile Include="view\ActionsRenderer.ts" />
+    <TypeScriptCompile Include="view\ActionViewData.ts" />
     <TypeScriptCompile Include="app.ts" />
     <TypeScriptCompile Include="Binder.ts" />
-    <TypeScriptCompile Include="DataSource.ts" />
-    <TypeScriptCompile Include="DebugRenderer.ts" />
-    <TypeScriptCompile Include="Engine.ts" />
-    <TypeScriptCompile Include="HelperHTML.ts" />
-    <TypeScriptCompile Include="IInput.ts" />
-    <TypeScriptCompile Include="Input.ts" />
-    <TypeScriptCompile Include="Logger.ts" />
-    <TypeScriptCompile Include="Logic.ts" />
-    <TypeScriptCompile Include="LogRenderer.ts" />
-    <TypeScriptCompile Include="Modifier.ts" />
-    <TypeScriptCompile Include="Renderer.ts" />
-    <TypeScriptCompile Include="RenderUtils.ts" />
-    <TypeScriptCompile Include="ResourceRequirement.ts" />
-    <TypeScriptCompile Include="ResourcesRenderer.ts" />
-    <TypeScriptCompile Include="Stat.ts" />
-    <TypeScriptCompile Include="StatPrototype.ts" />
+    <TypeScriptCompile Include="dataSource\DataSource.ts" />
+    <TypeScriptCompile Include="view\DebugRenderer.ts" />
+    <TypeScriptCompile Include="engine\Engine.ts" />
+    <TypeScriptCompile Include="view\HelperHTML.ts" />
+    <TypeScriptCompile Include="engine\IInput.ts" />
+    <TypeScriptCompile Include="engine\Input.ts" />
+    <TypeScriptCompile Include="engine\Logger.ts" />
+    <TypeScriptCompile Include="engine\Logic.ts" />
+    <TypeScriptCompile Include="view\LogRenderer.ts" />
+    <TypeScriptCompile Include="engine\Modifier.ts" />
+    <TypeScriptCompile Include="view\Renderer.ts" />
+    <TypeScriptCompile Include="view\RenderUtils.ts" />
+    <TypeScriptCompile Include="engine\ResourceRequirement.ts" />
+    <TypeScriptCompile Include="view\ResourcesRenderer.ts" />
+    <TypeScriptCompile Include="engine\Stat.ts" />
+    <TypeScriptCompile Include="engine\StatPrototype.ts" />
   </ItemGroup>
   <ItemGroup>
     <None Include="web.Debug.config">
