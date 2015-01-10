@@ -48,10 +48,12 @@
 }
 
 .actionCanvas {
-    height:24px;
+    height:100%;
     width: 100%;
-    position: fixed;
+    position: absolute;
     top: 0;
+    left: 0;
+    z-index: 0;
 }
 
 .actionHeader {
@@ -80,7 +82,19 @@
 }
 
 .actionHeaderText {
+    position:absolute;
     font-weight: bold;
+    z-index: 1;
+    margin: auto;
+    left:0; right:0;
+}
+
+.actionHeaderProgress {
+    position:absolute;
+    font-size:small;
+    z-index: 1;
+    right:5px;
+    top: 0;
 }
 
 .actionContent {
@@ -134,7 +148,7 @@
 }
 
 .tooltipContent {
-    padding: 0 0.8em 0.8em 1em;
+    padding: 0 0.1em 0.8em 1em;
     background: #716a4a;
     color:white;
 }

@@ -258,17 +258,22 @@ var ActionsRenderer = (function () {
         this.list = root.getElementsByClassName("actionList")[0];
     };
     ActionsRenderer.prototype.updateProgress = function (action) {
-        action.viewData.headerElement.innerText = [action.name, " ", (action.progress * 100).toFixed(0), "% ( ", RenderUtils.beautifyInt(action.timeLeft / 1000), " sec.left)"].join("");
+        //action.viewData.headerElement.innerText = [action.name, " ", (action.progress * 100).toFixed(0), "% ( ", RenderUtils.beautifyInt(action.timeLeft / 1000), " s. left)"].join("");
+        action.viewData.progressElement.innerText = [(action.progress * 100).toFixed(0), "% \n( ", RenderUtils.beautifyInt(action.timeLeft / 1000), " s. left)"].join("");
+        var context = action.viewData.canvas.getContext("2d");
+        context.fillStyle = "#0000FF";
+        context.fillRect(0, 0, action.viewData.canvas.width * action.progress, action.viewData.canvas.height);
     };
     ActionsRenderer.prototype.actionToHtml = function (action, input) {
         var outerElement = HelperHTML.element("li", "action testTooltipable");
         if (action.isStarted) {
             var headerDiv = HelperHTML.element("div", "actionHeader actionHeader_Progress");
             var canvas = HelperHTML.element("canvas", "actionCanvas");
-            headerDiv.appendChild(canvas);
-            //var text = [action.name, " ", (action.progress * 100).toFixed(0), " (", "sec.left)", RenderUtils.beautifyInt(action.timeLeft)];
-            var span = HelperHTML.element("span", "actionHeaderText");
+            var span = HelperHTML.element("span", "actionHeaderText", action.name);
+            var progressSpan = HelperHTML.element("span", "actionHeaderProgress");
             headerDiv.appendChild(span);
+            headerDiv.appendChild(canvas);
+            headerDiv.appendChild(progressSpan);
             action.viewData.headerElement = span;
             outerElement.appendChild(headerDiv);
         }
@@ -334,6 +339,8 @@ var ActionViewData = (function () {
         this.isRendered = true;
         this.isStarted = action.isStarted;
         this.element = element;
+        this.canvas = element.getElementsByTagName("canvas")[0];
+        this.progressElement = element.getElementsByClassName("actionHeaderProgress")[0];
         this.isAvailable = action.isAvailable(engine);
     };
     ActionViewData.prototype.isValid = function (action, engine) {

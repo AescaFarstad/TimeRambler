@@ -42,7 +42,11 @@
     }
 
     private updateProgress(action: Action): void {
-        action.viewData.headerElement.innerText = [action.name, " ", (action.progress * 100).toFixed(0), "% ( ", RenderUtils.beautifyInt(action.timeLeft/1000), " sec.left)"].join("");
+        //action.viewData.headerElement.innerText = [action.name, " ", (action.progress * 100).toFixed(0), "% ( ", RenderUtils.beautifyInt(action.timeLeft / 1000), " s. left)"].join("");
+        action.viewData.progressElement.innerText = [(action.progress * 100).toFixed(0), "% \n( ", RenderUtils.beautifyInt(action.timeLeft / 1000), " s. left)"].join("");
+        var context = action.viewData.canvas.getContext("2d");
+        context.fillStyle = "#0000FF";
+        context.fillRect(0, 0, action.viewData.canvas.width * action.progress, action.viewData.canvas.height);
     }
 
     private actionToHtml(action: Action, input: Input): HTMLElement {
@@ -51,10 +55,11 @@
         if (action.isStarted) {
             var headerDiv: HTMLElement = HelperHTML.element("div", "actionHeader actionHeader_Progress");
             var canvas: HTMLElement = HelperHTML.element("canvas", "actionCanvas");
-            headerDiv.appendChild(canvas);
-            //var text = [action.name, " ", (action.progress * 100).toFixed(0), " (", "sec.left)", RenderUtils.beautifyInt(action.timeLeft)];
-            var span: HTMLElement = HelperHTML.element("span", "actionHeaderText");
+            var span: HTMLElement = HelperHTML.element("span", "actionHeaderText", action.name);
+            var progressSpan: HTMLElement = HelperHTML.element("span", "actionHeaderProgress");
             headerDiv.appendChild(span);
+            headerDiv.appendChild(canvas);
+            headerDiv.appendChild(progressSpan);
             action.viewData.headerElement = span;
             outerElement.appendChild(headerDiv);
         }
