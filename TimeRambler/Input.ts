@@ -32,6 +32,7 @@
         if (action.isAvailable(this.engine))
             action.start(this.engine);
     }
+
     public cancelAction(action: Action): void {
         if (action.isStarted)
             action.cancel(this.engine);

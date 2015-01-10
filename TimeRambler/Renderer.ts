@@ -18,9 +18,9 @@
     private gameLogRenderer: LogRenderer;
     private debugLogRenderer: LogRenderer;
 
-    private input: IInput;
+    private input: Input;
 
-    public load(root: HTMLElement, engine: Engine, input: IInput): void {
+    public load(root: HTMLElement, engine: Engine, input: Input): void {
 
         this.root = root;
         this.engine = engine;

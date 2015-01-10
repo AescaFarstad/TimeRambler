@@ -54,45 +54,39 @@
     top: 0;
 }
 
-.actionHeader_Available {
-    border: 2px solid black;
-    background-color: #90ff87;
+.actionHeader {
     text-align: center;
-    height: 24px;
+    font-size: larger;
+    font-weight: bold;
+    color: white;
+    height: 35px;
+    position: relative;
+    padding-top: 5px;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
-.actionHeaderText_Available {
-    font-weight: bold;
-    text-align:center;
-}
-
-.actionHeaderText_Progress {
-    font-weight: bold;
-    text-align:center;
+.actionHeader_Available {
+    background-color: #0b8501;
 }
 
 .actionHeader_Unavailable {
-    border: 2px solid black;
-    background-color: #ff9087;
-    text-align: center;    
-    height: 24px;
+    background-color: #93372f;
 }
-
 .actionHeader_Progress {
-    border: 2px solid black;
-    background-color: #87abff;
-    text-align: center;
-    height: 24px;
+    background-color: #18316d;
 }
 
-.actionHeaderText_Unavailable {
-    text-align:center;
+.actionHeaderText {
+    font-weight: bold;
 }
 
 .actionContent {
-    border: 1px solid black;
-    margin: -1px 5px 5px 5px;
-    padding: 0px 5px 5px 5px;
+    padding: 12px 5px 5px 5px;
+    background-color:#716a4a;
+    color:white;
 }
 
 .actionContentText {
@@ -129,23 +123,18 @@
 .testTooltipable:hover div.testTooltip {
   position: absolute;
   left: 300px;
-  top: 0px;
+  top: 0;
   z-index: 99;
   margin-left: 0;
   width: 350px;
 }
 
 .tooltipHeader {
-    padding: 0.5em 0.5em 0.5em 0.5em;
-    text-align: center;
     background: #b6a75f;
-    color:white;
-    font-size:larger;
-    font-weight:bold;
 }
 
 .tooltipContent {
-    padding: 0.5em 0.8em 0.8em 1em;
+    padding: 0 0.8em 0.8em 1em;
     background: #716a4a;
     color:white;
 }

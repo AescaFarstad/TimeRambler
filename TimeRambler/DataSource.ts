@@ -51,7 +51,7 @@
         var smallHuntMajorSuccess1Outcome: ActionOutcome = new ActionOutcome("majoruccess1", 15, ActionOutcomes.smallHuntMajorSuccess1Exec, ActionOutcomes.smallHuntMajorSuccess1HistoryEntry);
         var smallHuntMajorSuccess2Outcome: ActionOutcome = new ActionOutcome("majoruccess2", 15, ActionOutcomes.smallHuntMajorSuccess2Exec, ActionOutcomes.smallHuntMajorSuccess2HistoryEntry);
 
-        var smallHuntAction: Action = new Action("smallHunt", "Hunt", 3, 7 * 1000, new ResourceRequirement([], []), [smallHuntFailOutcome,
+        var smallHuntAction: Action = new Action("smallHunt", "Hunt", 3, 1 * 1000, new ResourceRequirement([], []), [smallHuntFailOutcome,
             smallHuntMinorSuccess1Outcome, smallHuntMinorSuccess2Outcome, smallHuntMinorSuccess3Outcome, smallHuntMajorSuccess1Outcome, smallHuntMajorSuccess2Outcome]);
         engine.addAction(smallHuntAction);
 

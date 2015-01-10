@@ -8,6 +8,7 @@
     public isRendered: Boolean;
     public isStarted: Boolean;
     public isAvailable: Boolean;
+    public isContentOpen: Boolean = false;
 
     public setRendered(action: Action, element: HTMLElement, engine:Engine): void {
         this.isRendered = true;

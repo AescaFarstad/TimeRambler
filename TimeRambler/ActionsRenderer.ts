@@ -5,7 +5,7 @@
 
     private root: HTMLElement;
     private engine: Engine;
-    private input: IInput;
+    private input: Input;
     private list: HTMLElement;
 
     public setRoot(root: HTMLElement): void {
@@ -34,7 +34,7 @@
         }
     }
 
-    public load(root: HTMLElement, engine: Engine, input:IInput): void {
+    public load(root: HTMLElement, engine: Engine, input:Input): void {
         this.root = root;
         this.engine = engine;
         this.input = input;
@@ -45,50 +45,58 @@
         action.viewData.headerElement.innerText = [action.name, " ", (action.progress * 100).toFixed(0), "% ( ", RenderUtils.beautifyInt(action.timeLeft/1000), " sec.left)"].join("");
     }
 
-    private actionToHtml(action: Action, input: IInput): HTMLElement {
+    private actionToHtml(action: Action, input: Input): HTMLElement {
 
         var outerElement: HTMLElement = HelperHTML.element("li", "action testTooltipable");
         if (action.isStarted) {
-            var div: HTMLElement = HelperHTML.element("div", "actionHeader_Progress");
+            var headerDiv: HTMLElement = HelperHTML.element("div", "actionHeader actionHeader_Progress");
             var canvas: HTMLElement = HelperHTML.element("canvas", "actionCanvas");
-            div.appendChild(canvas);
+            headerDiv.appendChild(canvas);
             //var text = [action.name, " ", (action.progress * 100).toFixed(0), " (", "sec.left)", RenderUtils.beautifyInt(action.timeLeft)];
-            var span: HTMLElement = HelperHTML.element("span", "actionHeaderText_Progress");
-            div.appendChild(span);
+            var span: HTMLElement = HelperHTML.element("span", "actionHeaderText");
+            headerDiv.appendChild(span);
             action.viewData.headerElement = span;
-            outerElement.appendChild(div);
+            outerElement.appendChild(headerDiv);
         }
         else {
             var availability: string = action.isAvailable(this.engine) ? "Available" : "Unavailable";
-            div = HelperHTML.element("div", "actionHeader_" + availability);
-            span = HelperHTML.element("span", "actionHeaderText_" + availability, action.name);
-            div.appendChild(span);
-            outerElement.appendChild(div);
+            headerDiv = HelperHTML.element("div", "actionHeader actionHeader_" + availability);
+            span = HelperHTML.element("span", "actionHeaderText", action.name);
+            headerDiv.appendChild(span);
+            outerElement.appendChild(headerDiv);
         }
         
         
 
-        div = HelperHTML.element("div", "actionContent");
-        div.appendChild(HelperHTML.element("div", "actionContentText", "Pop: " + action.pop));
-        div.appendChild(HelperHTML.element("div", "actionContentText", "Time: " + Math.ceil(action.time / 1000) + " sec."));
+        var contentDiv: HTMLElement = HelperHTML.element("div", "actionContent");
+        contentDiv.appendChild(HelperHTML.element("div", "actionContentText", "Pop: " + action.pop));
+        contentDiv.appendChild(HelperHTML.element("div", "actionContentText", "Time: " + Math.ceil(action.time / 1000) + " sec."));
         if (!action.resources.isEmpty) {
             var innerDiv: HTMLElement = HelperHTML.element("div", "actionContentText", "Requires:");
             for (var i: number = 0; i < action.resources.resources.length; i++) {
                 var resource: Stat = this.engine.resourcesById(action.resources.resources[i]);
                 innerDiv.appendChild(HelperHTML.element("div", "actionContent_Requirement", resource.name + ": " + action.resources.quantaties[i]));
             }
-            div.appendChild(innerDiv);
+            contentDiv.appendChild(innerDiv);
         }
         var buttonDiv: HTMLElement = HelperHTML.element("div", "actionButtonContainer");
         var button: HTMLButtonElement = <HTMLButtonElement> HelperHTML.element("button", "actionButton", action.isStarted ? "Cancel" : "Start");
         if (input)
             button.onclick = action.isStarted ? () => input.cancelAction(action) : () => input.activateAction(action);
         buttonDiv.appendChild(button);
-        div.appendChild(buttonDiv);
-        outerElement.appendChild(div);
+        contentDiv.appendChild(buttonDiv);
+        outerElement.appendChild(contentDiv);
+        contentDiv.style.display = action.viewData.isContentOpen ? "block" : "none";
+
+        headerDiv.onclick = () => {
+            action.viewData.isContentOpen = !action.viewData.isContentOpen; contentDiv.style.display = action.viewData.isContentOpen ? "block" : "none";
+        }
+
         if (action.outcomeHistory) {
             var tooptil: HTMLElement = HelperHTML.element("div", "testTooltip");
-            var tHeader: HTMLElement = HelperHTML.element("div", "tooltipHeader", "Known possible outcomes");
+            var tHeaderText: HTMLElement = HelperHTML.element("span", "actionHeaderText", "Known possible outcomes"); 
+            var tHeader: HTMLElement = HelperHTML.element("div", "actionHeader tooltipHeader");
+            tHeader.appendChild(tHeaderText);
             var tContent: HTMLElement = HelperHTML.element("div", "tooltipContent");
             var tTable: HTMLTableElement = <HTMLTableElement> HelperHTML.element("table", "tooltipTable");
             tTable.cellSpacing = "15";

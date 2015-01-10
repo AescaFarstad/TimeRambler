@@ -263,43 +263,50 @@ var ActionsRenderer = (function () {
     ActionsRenderer.prototype.actionToHtml = function (action, input) {
         var outerElement = HelperHTML.element("li", "action testTooltipable");
         if (action.isStarted) {
-            var div = HelperHTML.element("div", "actionHeader_Progress");
+            var headerDiv = HelperHTML.element("div", "actionHeader actionHeader_Progress");
             var canvas = HelperHTML.element("canvas", "actionCanvas");
-            div.appendChild(canvas);
+            headerDiv.appendChild(canvas);
             //var text = [action.name, " ", (action.progress * 100).toFixed(0), " (", "sec.left)", RenderUtils.beautifyInt(action.timeLeft)];
-            var span = HelperHTML.element("span", "actionHeaderText_Progress");
-            div.appendChild(span);
+            var span = HelperHTML.element("span", "actionHeaderText");
+            headerDiv.appendChild(span);
             action.viewData.headerElement = span;
-            outerElement.appendChild(div);
+            outerElement.appendChild(headerDiv);
         }
         else {
             var availability = action.isAvailable(this.engine) ? "Available" : "Unavailable";
-            div = HelperHTML.element("div", "actionHeader_" + availability);
-            span = HelperHTML.element("span", "actionHeaderText_" + availability, action.name);
-            div.appendChild(span);
-            outerElement.appendChild(div);
+            headerDiv = HelperHTML.element("div", "actionHeader actionHeader_" + availability);
+            span = HelperHTML.element("span", "actionHeaderText", action.name);
+            headerDiv.appendChild(span);
+            outerElement.appendChild(headerDiv);
         }
-        div = HelperHTML.element("div", "actionContent");
-        div.appendChild(HelperHTML.element("div", "actionContentText", "Pop: " + action.pop));
-        div.appendChild(HelperHTML.element("div", "actionContentText", "Time: " + Math.ceil(action.time / 1000) + " sec."));
+        var contentDiv = HelperHTML.element("div", "actionContent");
+        contentDiv.appendChild(HelperHTML.element("div", "actionContentText", "Pop: " + action.pop));
+        contentDiv.appendChild(HelperHTML.element("div", "actionContentText", "Time: " + Math.ceil(action.time / 1000) + " sec."));
         if (!action.resources.isEmpty) {
             var innerDiv = HelperHTML.element("div", "actionContentText", "Requires:");
             for (var i = 0; i < action.resources.resources.length; i++) {
                 var resource = this.engine.resourcesById(action.resources.resources[i]);
                 innerDiv.appendChild(HelperHTML.element("div", "actionContent_Requirement", resource.name + ": " + action.resources.quantaties[i]));
             }
-            div.appendChild(innerDiv);
+            contentDiv.appendChild(innerDiv);
         }
         var buttonDiv = HelperHTML.element("div", "actionButtonContainer");
         var button = HelperHTML.element("button", "actionButton", action.isStarted ? "Cancel" : "Start");
         if (input)
             button.onclick = action.isStarted ? function () { return input.cancelAction(action); } : function () { return input.activateAction(action); };
         buttonDiv.appendChild(button);
-        div.appendChild(buttonDiv);
-        outerElement.appendChild(div);
+        contentDiv.appendChild(buttonDiv);
+        outerElement.appendChild(contentDiv);
+        contentDiv.style.display = action.viewData.isContentOpen ? "block" : "none";
+        headerDiv.onclick = function () {
+            action.viewData.isContentOpen = !action.viewData.isContentOpen;
+            contentDiv.style.display = action.viewData.isContentOpen ? "block" : "none";
+        };
         if (action.outcomeHistory) {
             var tooptil = HelperHTML.element("div", "testTooltip");
-            var tHeader = HelperHTML.element("div", "tooltipHeader", "Known possible outcomes");
+            var tHeaderText = HelperHTML.element("span", "actionHeaderText", "Known possible outcomes");
+            var tHeader = HelperHTML.element("div", "actionHeader tooltipHeader");
+            tHeader.appendChild(tHeaderText);
             var tContent = HelperHTML.element("div", "tooltipContent");
             var tTable = HelperHTML.element("table", "tooltipTable");
             tTable.cellSpacing = "15";
@@ -321,6 +328,7 @@ var ActionsRenderer = (function () {
 })();
 var ActionViewData = (function () {
     function ActionViewData() {
+        this.isContentOpen = false;
     }
     ActionViewData.prototype.setRendered = function (action, element, engine) {
         this.isRendered = true;
@@ -395,7 +403,7 @@ var DataSource = (function () {
         var smallHuntMinorSuccess3Outcome = new ActionOutcome("minorSuccess3", 10, ActionOutcomes.smallHuntMinorSuccess3Exec, ActionOutcomes.smallHuntMinorSuccess3HistoryEntry);
         var smallHuntMajorSuccess1Outcome = new ActionOutcome("majoruccess1", 15, ActionOutcomes.smallHuntMajorSuccess1Exec, ActionOutcomes.smallHuntMajorSuccess1HistoryEntry);
         var smallHuntMajorSuccess2Outcome = new ActionOutcome("majoruccess2", 15, ActionOutcomes.smallHuntMajorSuccess2Exec, ActionOutcomes.smallHuntMajorSuccess2HistoryEntry);
-        var smallHuntAction = new Action("smallHunt", "Hunt", 3, 7 * 1000, new ResourceRequirement([], []), [smallHuntFailOutcome, smallHuntMinorSuccess1Outcome, smallHuntMinorSuccess2Outcome, smallHuntMinorSuccess3Outcome, smallHuntMajorSuccess1Outcome, smallHuntMajorSuccess2Outcome]);
+        var smallHuntAction = new Action("smallHunt", "Hunt", 3, 1 * 1000, new ResourceRequirement([], []), [smallHuntFailOutcome, smallHuntMinorSuccess1Outcome, smallHuntMinorSuccess2Outcome, smallHuntMinorSuccess3Outcome, smallHuntMajorSuccess1Outcome, smallHuntMajorSuccess2Outcome]);
         engine.addAction(smallHuntAction);
         //Great hunt
         var greatHuntOutcome = new ActionOutcome("success", 1, ActionOutcomes.greatHunt, ActionOutcomes.greatHuntHistoryEntry);
