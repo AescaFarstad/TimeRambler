@@ -5,12 +5,17 @@
         this._resourcesById = Object();
         this._actions = new Array<Action>();
         this._actionsById = Object();
-        this._rules = new Array <Function>();
+        this._rules = new Array<GameRule>();
+        this.playerData = new PlayerData();
+        this.ruleRemoveQueue = new Array<GameRule>();
     }
 
     public timeScale: number = 1;
     public stepScale: number = 1;
     public numericScale: number = 0;
+    public playerData: PlayerData;
+    private isUpdateInProgress: boolean;
+    private ruleRemoveQueue: Array<GameRule>;
 
     private _time: number = 0;
     public get time():number{
@@ -37,14 +42,15 @@
         return this._actionsById[id];
     }
 
-    private _rules: Array<Function>;
-    public get rules(): Array<Function> {
+    private _rules: Array<GameRule>;
+    public get rules(): Array<GameRule> {
         return this._rules;
     }
 
     public update(timeDelta:number):void {
         this._time += timeDelta;
 
+        this.isUpdateInProgress = true;
         for (var i: number = 0; i < this._resources.length; i++) {
             this._resources[i].updateStart(timeDelta);
         }
@@ -59,12 +65,19 @@
         }
 
         for (var i: number = 0; i < this._rules.length; i++) {
-            this._rules[i](this);
+            this._rules[i].exec(this);
         }
 
         for (var i: number = 0; i < this._resources.length; i++) {
-            this._resources[i].updateEnd();
+            this._resources[i].updateEnd(this);
         }
+        this.isUpdateInProgress = false;
+        if (this.ruleRemoveQueue.length > 0) {
+            for (var i: number = 0; i < this.ruleRemoveQueue.length; i++) {
+                this.removeRule(this.ruleRemoveQueue[i], true);
+            }
+            this.ruleRemoveQueue.length = 0;
+        }        
     }
 
     public addResource(resource: Stat): void {
@@ -77,7 +90,20 @@
         this._actionsById[action.id] = action;
     }
 
-    public addRule(rule: Function): void {
+    public addRule(rule: GameRule): void {
         this._rules.push(rule);
+    }
+
+    public removeRule(rule: GameRule, isSilent: boolean = false): void {
+        if (!isSilent) {
+            logEngine("Removed rule " + rule.id);
+        }
+        if (this.isUpdateInProgress) {
+            var indsexOf: number = this._rules.indexOf(rule);
+            this.ruleRemoveQueue.push(rule);
+            return;
+        }
+        var indexOf: number = this._rules.indexOf(rule);
+        this._rules.splice(indexOf, 1);
     }
 }  

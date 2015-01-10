@@ -11,6 +11,8 @@
     public viewData: ActionViewData;
     private _lastOutcome: ActionOutcome;
     private _outcomeHistory: Object;
+    public isDiscovered: boolean;
+    public isObsolete: boolean;
 
 
     constructor(id: string, name: string, pop: number, time: number, resources: ResourceRequirement, outcomes: Array<ActionOutcome>) {

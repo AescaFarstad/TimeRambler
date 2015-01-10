@@ -9,6 +9,9 @@
     public id: string;
     public isDecimal: boolean = true;
     public hasCap: boolean = true;
+    public isDiscovered: boolean;
+    public isObsolete: boolean;
+
 
     private rateModifiers: Array<Modifier>;
     private capModifiers: Array<Modifier>;
@@ -29,9 +32,11 @@
         this._value += this._rateCache * timeDelta;
     }
 
-    public updateEnd(): void {
-        if (this.hasCap && this._value > this._capCache)
+    public updateEnd(engine:Engine): void {
+        if (this.hasCap && this._value > this._capCache) {
             this._value = this._capCache;
+            engine.playerData.limitOnResourcesWasHit = true;
+        }
         else if (this._value < 0)
             this._value = 0;
     }

@@ -15,12 +15,19 @@
     public update(timeDelta: number): void {
         for (var i: number = 0; i < this.engine.actions.length; i++) {
             var isRemoved: boolean = false;
-            if (!this.engine.actions[i].viewData.isValid(this.engine.actions[i], this.engine) && this.engine.actions[i].viewData.isRendered) {
+            if (this.engine.actions[i].viewData.isRendered &&
+                (this.engine.actions[i].isObsolete ||
+                !this.engine.actions[i].isDiscovered ||
+                !this.engine.actions[i].viewData.isValid(this.engine.actions[i], this.engine))
+                ) {
                 var nextSibling: HTMLElement = <HTMLElement> this.engine.actions[i].viewData.element.nextSibling;
                 this.list.removeChild(this.engine.actions[i].viewData.element);
                 isRemoved = true;
             }
             if (isRemoved || !this.engine.actions[i].viewData.isRendered) {
+                if (this.engine.actions[i].isObsolete || !this.engine.actions[i].isDiscovered) {
+                    continue;
+                }
                 var element: HTMLElement = this.actionToHtml(this.engine.actions[i], this.input);
                 this.engine.actions[i].viewData.setRendered(this.engine.actions[i], element, this.engine);
                 if (isRemoved && nextSibling) 

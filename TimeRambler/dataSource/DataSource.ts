@@ -6,18 +6,22 @@
     public static foorPerPop: number = 0.1;
     public static canibalicFood: number = 20;
 
-    public initEngine(engine:Engine): void {
+    public initEngine(engine: Engine): void {
+        GameRules.init();
+
         var popResource: Stat = new Stat("pop", "pop");
         
         popResource.insertCapModifier(new Modifier("init", 10, 0));
         popResource.isDecimal = false;
         engine.addResource(popResource);
+        popResource.isDiscovered = true;
 
         var unemployedResource: Stat = new Stat("unemployed", "unemployed");
 
         unemployedResource.onValueChanged = this.unemployedRule;
         unemployedResource.isDecimal = false;
         unemployedResource.hasCap = false;
+        unemployedResource.isDiscovered = true;
         engine.addResource(unemployedResource);
 
         var foodResource: Stat = new Stat("food", "food");
@@ -25,12 +29,13 @@
         foodResource.insertCapModifier(new Modifier("init", 20, 0));
         foodResource.insertCapModifier(new Modifier("pop", 0, 0));
         foodResource.insertRateModifier(new Modifier("pop", 0, 0));
+        foodResource.isDiscovered = true;
         engine.addResource(foodResource);
 
         popResource.onValueChanged = this.popRule;
         popResource.setValue(3, engine);
 
-        engine.addRule(this.foodRule);
+        engine.addRule(GameRules.foodRule);
 
         var woodResource: Stat = new Stat("wood", "wood");
         woodResource.insertCapModifier(new Modifier("init", 50, 0));
@@ -40,7 +45,7 @@
         var growFailOutcome: ActionOutcome = new ActionOutcome("fail", 35, ActionOutcomes.growFailExec, ActionOutcomes.growFailHistoryEntry);
         var growSuccessOutcome: ActionOutcome = new ActionOutcome("success", 65, ActionOutcomes.growSuccessExec, ActionOutcomes.growSuccessHistoryEntry);
 
-        var growAction: Action = new Action("grow", "Grow", 2, 10 * 1000, new ResourceRequirement(["food"], [10]), [growFailOutcome, growSuccessOutcome]);
+        var growAction: Action = new Action("grow", "Raise a child", 2, 10 * 1000, new ResourceRequirement(["food"], [10]), [growFailOutcome, growSuccessOutcome]);
         engine.addAction(growAction);
 
         //Small hunt
@@ -55,14 +60,18 @@
             smallHuntMinorSuccess1Outcome, smallHuntMinorSuccess2Outcome, smallHuntMinorSuccess3Outcome, smallHuntMajorSuccess1Outcome, smallHuntMajorSuccess2Outcome]);
         engine.addAction(smallHuntAction);
 
+        smallHuntAction.isDiscovered = true;
+        smallHuntAction.viewData.isContentOpen = true;
+
         //Great hunt
         var greatHuntOutcome: ActionOutcome = new ActionOutcome("success", 1, ActionOutcomes.greatHunt, ActionOutcomes.greatHuntHistoryEntry);
 
         var greatHuntAction: Action = new Action("greatHunt", "Great Hunt", 6, 30 * 1000, new ResourceRequirement(["wood"], [10]), [greatHuntOutcome]);
         engine.addAction(greatHuntAction);
 
-        engine.addRule(this.huntingRule);
-
+        engine.addRule(GameRules.huntingRule);
+        engine.addRule(GameRules.unlockGrowRule);
+        engine.addRule(GameRules.unlockGreatHuntRule);
     }
 
     private popRule(stat: Stat, engine: Engine, delta:number): void {
@@ -84,30 +93,7 @@
         }
     }
 
-    //if there is not enough food people must die
-    private foodRule(engine: Engine): void{
-        var food: Stat = engine.resourcesById("food");
-        var pop: Stat = engine.resourcesById("pop");
-        var popVal: number = pop.value;
-        while (food.value < 0 && popVal > 0) {
-            logGame("Starvation has claimed a villager! <b>Population decreased by 1.</b>")
-            food.setValue(food.value + DataSource.canibalicFood, engine);
-            popVal -= 1;
-        }
-        pop.setValue(popVal, engine);
-    }
-
-    //if food is low - hunt
-    private huntingRule(engine: Engine): void {
-        var food: Stat = engine.resourcesById("food");
-        if (food.value < 10) {
-            var smallHunt: Action = engine.actionsById("smallHunt");
-            if (!smallHunt.isStarted && smallHunt.isAvailable(engine)) {
-                logGame("The villagers have noticed the shortage of food and decided to go hunting.");
-                smallHunt.start(engine);
-            }
-        }
-    }
+    
 
     
 

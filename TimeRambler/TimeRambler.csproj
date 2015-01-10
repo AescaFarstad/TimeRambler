@@ -24,9 +24,12 @@
     <Content Include="web.config" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="dataSource\GameRules.ts" />
     <TypeScriptCompile Include="engine\Action.ts" />
     <TypeScriptCompile Include="engine\ActionOutcome.ts" />
     <TypeScriptCompile Include="dataSource\ActionOutcomes.ts" />
+    <TypeScriptCompile Include="engine\GameRule.ts" />
+    <TypeScriptCompile Include="engine\PlayerData.ts" />
     <TypeScriptCompile Include="view\ActionsRenderer.ts" />
     <TypeScriptCompile Include="view\ActionViewData.ts" />
     <TypeScriptCompile Include="app.ts" />

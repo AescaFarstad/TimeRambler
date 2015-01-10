@@ -1,3 +1,47 @@
+var GameRules = (function () {
+    function GameRules() {
+    }
+    GameRules.init = function () {
+        GameRules.foodRule = new GameRule("foodRule", GameRules.foodRuleExec);
+        GameRules.huntingRule = new GameRule("huntingRule", GameRules.huntingRuleExec);
+        GameRules.unlockGrowRule = new GameRule("unlockGrowRule", GameRules.unlockGrowRuleExec);
+        GameRules.unlockGreatHuntRule = new GameRule("unlockGreatHuntRule", GameRules.unlockGreatHuntRuleExec);
+    };
+    GameRules.foodRuleExec = function (engine) {
+        var food = engine.resourcesById("food");
+        var pop = engine.resourcesById("pop");
+        var popVal = pop.value;
+        while (food.value < 0 && popVal > 0) {
+            logGame("Starvation has claimed a villager! <b>Population decreased by 1.</b>");
+            food.setValue(food.value + DataSource.canibalicFood, engine);
+            popVal -= 1;
+        }
+        pop.setValue(popVal, engine);
+    };
+    GameRules.huntingRuleExec = function (engine) {
+        var food = engine.resourcesById("food");
+        if (food.value < 10) {
+            var smallHunt = engine.actionsById("smallHunt");
+            if (!smallHunt.isStarted && smallHunt.isAvailable(engine)) {
+                logGame("The villagers have noticed the shortage of food and decided to go hunting.");
+                smallHunt.start(engine);
+            }
+        }
+    };
+    GameRules.unlockGrowRuleExec = function (engine) {
+        if (engine.playerData.numberOfSmallHunts > 2) {
+            engine.actionsById("grow").isDiscovered = true;
+            engine.removeRule(GameRules.unlockGrowRule);
+        }
+    };
+    GameRules.unlockGreatHuntRuleExec = function (engine) {
+        if (engine.playerData.numberOfSmallHunts > 2 && engine.playerData.numberOfGrows > 1) {
+            engine.actionsById("greatHunt").isDiscovered = true;
+            engine.removeRule(GameRules.unlockGreatHuntRule);
+        }
+    };
+    return GameRules;
+})();
 var Action = (function () {
     function Action(id, name, pop, time, resources, outcomes) {
         this.id = id;
@@ -140,11 +184,13 @@ var ActionOutcomes = (function () {
             logGame("The child died young.");
             logEngine("pop on small hunt didn't die because population is too low");
         }
+        engine.playerData.numberOfGrows++;
         return null;
     };
     ActionOutcomes.growSuccessExec = function (action, outcome, engine) {
         logGame("Family grows. <b>Population increased by 1.</b>");
         engine.resourcesById("pop").modify(1, engine);
+        engine.playerData.numberOfGrows++;
     };
     ActionOutcomes.smallHuntFailExec = function (action, outcome, engine) {
         if (action.lastOutcome == outcome) {
@@ -159,6 +205,7 @@ var ActionOutcomes = (function () {
             logGame("The hunters returned empty-handed.");
             logEngine("pop on small hunt didn't die because population is too low");
         }
+        engine.playerData.numberOfSmallHunts++;
         return null;
     };
     ActionOutcomes.smallHuntMinorSuccess1Exec = function (action, outcome, engine) {
@@ -172,6 +219,8 @@ var ActionOutcomes = (function () {
         }
         engine.resourcesById("food").modify(20, engine);
         engine.resourcesById("wood").modify(1, engine);
+        engine.resourcesById("wood").isDiscovered = true;
+        engine.playerData.numberOfSmallHunts++;
     };
     ActionOutcomes.smallHuntMinorSuccess2Exec = function (action, outcome, engine) {
         if (engine.resourcesById("pop").value > 3) {
@@ -183,6 +232,7 @@ var ActionOutcomes = (function () {
             logEngine("pop on small hunt didn't die because population is too low");
         }
         engine.resourcesById("food").modify(30, engine);
+        engine.playerData.numberOfSmallHunts++;
     };
     ActionOutcomes.smallHuntMinorSuccess3Exec = function (action, outcome, engine) {
         if (engine.resourcesById("pop").value > 3) {
@@ -194,21 +244,27 @@ var ActionOutcomes = (function () {
             logEngine("pop on small hunt didn't die because population is too low");
         }
         engine.resourcesById("food").modify(40, engine);
+        engine.playerData.numberOfSmallHunts++;
     };
     ActionOutcomes.smallHuntMajorSuccess1Exec = function (action, outcome, engine) {
         logGame("The hunt was a major success! <b>Food +40; Wood +3.</b> And the best thing - everyone returned home uninjured!");
         engine.resourcesById("food").modify(40, engine);
         engine.resourcesById("wood").modify(3, engine);
+        engine.resourcesById("wood").isDiscovered = true;
+        engine.playerData.numberOfSmallHunts++;
     };
     ActionOutcomes.smallHuntMajorSuccess2Exec = function (action, outcome, engine) {
         logGame("The hunt was a major success! <b>Food +50; Wood +1.</b> And the best thing - everyone returned home uninjured!");
         engine.resourcesById("food").modify(50, engine);
         engine.resourcesById("wood").modify(1, engine);
+        engine.resourcesById("wood").isDiscovered = true;
+        engine.playerData.numberOfSmallHunts++;
     };
     ActionOutcomes.greatHunt = function (action, outcome, engine) {
         logGame("The Great Hunt was almost failed due to coordination issues. It takes both great courage and strength to combat such large animals. You have played the key part here and everybody recognizes your contribution. <b>Food +150; Wood +25</b>");
         engine.resourcesById("food").modify(150, engine);
         engine.resourcesById("wood").modify(25, engine);
+        action.isObsolete = true;
     };
     //grow
     ActionOutcomes.growFailHistoryEntry = "Birth complications. Don't ask.";
@@ -224,6 +280,20 @@ var ActionOutcomes = (function () {
     ActionOutcomes.greatHuntHistoryEntry = "You are not supposed to ever read this. Unsee now!";
     return ActionOutcomes;
 })();
+var GameRule = (function () {
+    function GameRule(id, exec) {
+        this.id = id;
+        this.exec = exec;
+    }
+    return GameRule;
+})();
+var PlayerData = (function () {
+    function PlayerData() {
+        this.numberOfSmallHunts = 0;
+        this.numberOfGrows = 0;
+    }
+    return PlayerData;
+})();
 var ActionsRenderer = (function () {
     function ActionsRenderer() {
     }
@@ -233,12 +303,15 @@ var ActionsRenderer = (function () {
     ActionsRenderer.prototype.update = function (timeDelta) {
         for (var i = 0; i < this.engine.actions.length; i++) {
             var isRemoved = false;
-            if (!this.engine.actions[i].viewData.isValid(this.engine.actions[i], this.engine) && this.engine.actions[i].viewData.isRendered) {
+            if (this.engine.actions[i].viewData.isRendered && (this.engine.actions[i].isObsolete || !this.engine.actions[i].isDiscovered || !this.engine.actions[i].viewData.isValid(this.engine.actions[i], this.engine))) {
                 var nextSibling = this.engine.actions[i].viewData.element.nextSibling;
                 this.list.removeChild(this.engine.actions[i].viewData.element);
                 isRemoved = true;
             }
             if (isRemoved || !this.engine.actions[i].viewData.isRendered) {
+                if (this.engine.actions[i].isObsolete || !this.engine.actions[i].isDiscovered) {
+                    continue;
+                }
                 var element = this.actionToHtml(this.engine.actions[i], this.input);
                 this.engine.actions[i].viewData.setRendered(this.engine.actions[i], element, this.engine);
                 if (isRemoved && nextSibling)
@@ -377,31 +450,35 @@ var DataSource = (function () {
     function DataSource() {
     }
     DataSource.prototype.initEngine = function (engine) {
+        GameRules.init();
         var popResource = new Stat("pop", "pop");
         popResource.insertCapModifier(new Modifier("init", 10, 0));
         popResource.isDecimal = false;
         engine.addResource(popResource);
+        popResource.isDiscovered = true;
         var unemployedResource = new Stat("unemployed", "unemployed");
         unemployedResource.onValueChanged = this.unemployedRule;
         unemployedResource.isDecimal = false;
         unemployedResource.hasCap = false;
+        unemployedResource.isDiscovered = true;
         engine.addResource(unemployedResource);
         var foodResource = new Stat("food", "food");
         foodResource.setValue(15, engine);
         foodResource.insertCapModifier(new Modifier("init", 20, 0));
         foodResource.insertCapModifier(new Modifier("pop", 0, 0));
         foodResource.insertRateModifier(new Modifier("pop", 0, 0));
+        foodResource.isDiscovered = true;
         engine.addResource(foodResource);
         popResource.onValueChanged = this.popRule;
         popResource.setValue(3, engine);
-        engine.addRule(this.foodRule);
+        engine.addRule(GameRules.foodRule);
         var woodResource = new Stat("wood", "wood");
         woodResource.insertCapModifier(new Modifier("init", 50, 0));
         engine.addResource(woodResource);
         //Grow
         var growFailOutcome = new ActionOutcome("fail", 35, ActionOutcomes.growFailExec, ActionOutcomes.growFailHistoryEntry);
         var growSuccessOutcome = new ActionOutcome("success", 65, ActionOutcomes.growSuccessExec, ActionOutcomes.growSuccessHistoryEntry);
-        var growAction = new Action("grow", "Grow", 2, 10 * 1000, new ResourceRequirement(["food"], [10]), [growFailOutcome, growSuccessOutcome]);
+        var growAction = new Action("grow", "Raise a child", 2, 10 * 1000, new ResourceRequirement(["food"], [10]), [growFailOutcome, growSuccessOutcome]);
         engine.addAction(growAction);
         //Small hunt
         var smallHuntFailOutcome = new ActionOutcome("fail", 15, ActionOutcomes.smallHuntFailExec, ActionOutcomes.smallHuntFailHistoryEntry);
@@ -412,11 +489,15 @@ var DataSource = (function () {
         var smallHuntMajorSuccess2Outcome = new ActionOutcome("majoruccess2", 15, ActionOutcomes.smallHuntMajorSuccess2Exec, ActionOutcomes.smallHuntMajorSuccess2HistoryEntry);
         var smallHuntAction = new Action("smallHunt", "Hunt", 3, 1 * 1000, new ResourceRequirement([], []), [smallHuntFailOutcome, smallHuntMinorSuccess1Outcome, smallHuntMinorSuccess2Outcome, smallHuntMinorSuccess3Outcome, smallHuntMajorSuccess1Outcome, smallHuntMajorSuccess2Outcome]);
         engine.addAction(smallHuntAction);
+        smallHuntAction.isDiscovered = true;
+        smallHuntAction.viewData.isContentOpen = true;
         //Great hunt
         var greatHuntOutcome = new ActionOutcome("success", 1, ActionOutcomes.greatHunt, ActionOutcomes.greatHuntHistoryEntry);
         var greatHuntAction = new Action("greatHunt", "Great Hunt", 6, 30 * 1000, new ResourceRequirement(["wood"], [10]), [greatHuntOutcome]);
         engine.addAction(greatHuntAction);
-        engine.addRule(this.huntingRule);
+        engine.addRule(GameRules.huntingRule);
+        engine.addRule(GameRules.unlockGrowRule);
+        engine.addRule(GameRules.unlockGreatHuntRule);
     };
     DataSource.prototype.popRule = function (stat, engine, delta) {
         engine.resourcesById("food").editRateModifier("pop", -stat.value * DataSource.foorPerPop / 1000, 0);
@@ -432,29 +513,6 @@ var DataSource = (function () {
                     engine.actions[i].cancel(engine);
                     return;
                 }
-            }
-        }
-    };
-    //if there is not enough food people must die
-    DataSource.prototype.foodRule = function (engine) {
-        var food = engine.resourcesById("food");
-        var pop = engine.resourcesById("pop");
-        var popVal = pop.value;
-        while (food.value < 0 && popVal > 0) {
-            logGame("Starvation has claimed a villager! <b>Population decreased by 1.</b>");
-            food.setValue(food.value + DataSource.canibalicFood, engine);
-            popVal -= 1;
-        }
-        pop.setValue(popVal, engine);
-    };
-    //if food is low - hunt
-    DataSource.prototype.huntingRule = function (engine) {
-        var food = engine.resourcesById("food");
-        if (food.value < 10) {
-            var smallHunt = engine.actionsById("smallHunt");
-            if (!smallHunt.isStarted && smallHunt.isAvailable(engine)) {
-                logGame("The villagers have noticed the shortage of food and decided to go hunting.");
-                smallHunt.start(engine);
             }
         }
     };
@@ -510,6 +568,8 @@ var Engine = (function () {
         this._actions = new Array();
         this._actionsById = Object();
         this._rules = new Array();
+        this.playerData = new PlayerData();
+        this.ruleRemoveQueue = new Array();
     }
     Object.defineProperty(Engine.prototype, "time", {
         get: function () {
@@ -547,6 +607,7 @@ var Engine = (function () {
     });
     Engine.prototype.update = function (timeDelta) {
         this._time += timeDelta;
+        this.isUpdateInProgress = true;
         for (var i = 0; i < this._resources.length; i++) {
             this._resources[i].updateStart(timeDelta);
         }
@@ -558,10 +619,17 @@ var Engine = (function () {
             }
         }
         for (var i = 0; i < this._rules.length; i++) {
-            this._rules[i](this);
+            this._rules[i].exec(this);
         }
         for (var i = 0; i < this._resources.length; i++) {
-            this._resources[i].updateEnd();
+            this._resources[i].updateEnd(this);
+        }
+        this.isUpdateInProgress = false;
+        if (this.ruleRemoveQueue.length > 0) {
+            for (var i = 0; i < this.ruleRemoveQueue.length; i++) {
+                this.removeRule(this.ruleRemoveQueue[i], true);
+            }
+            this.ruleRemoveQueue.length = 0;
         }
     };
     Engine.prototype.addResource = function (resource) {
@@ -574,6 +642,19 @@ var Engine = (function () {
     };
     Engine.prototype.addRule = function (rule) {
         this._rules.push(rule);
+    };
+    Engine.prototype.removeRule = function (rule, isSilent) {
+        if (isSilent === void 0) { isSilent = false; }
+        if (!isSilent) {
+            logEngine("Removed rule " + rule.id);
+        }
+        if (this.isUpdateInProgress) {
+            var indsexOf = this._rules.indexOf(rule);
+            this.ruleRemoveQueue.push(rule);
+            return;
+        }
+        var indexOf = this._rules.indexOf(rule);
+        this._rules.splice(indexOf, 1);
     };
     return Engine;
 })();
@@ -660,7 +741,7 @@ var Logic = (function () {
         if (!this.isActive)
             return;
         var newStamp = new Date().getTime();
-        var delta = newStamp - this.timeStamp;
+        var delta = Math.min(newStamp - this.timeStamp, Logic.UPDATE_PERIOD * 1.5);
         delta *= this.engine.timeScale / this.engine.stepScale;
         this.timeStamp = newStamp;
         this.engine.update(delta);
@@ -810,12 +891,16 @@ var ResourcesRenderer = (function () {
     ResourcesRenderer.prototype.update = function (timeDelta) {
         var html = "<table class=\"resourceTable\" cellspacing=\"5\">";
         for (var i = 0; i < this.engine.resources.length; i++) {
-            html += "<tr><td>" + this.engine.resources[i].name + "</td><td>" + this.engine.resources[i].value.toFixed(this.engine.resources[i].isDecimal ? 2 : 0) + "</td><td>";
-            if (this.engine.resources[i].hasCap)
-                html += "/ " + this.engine.resources[i].cap;
+            var resource = this.engine.resources[i];
+            if (resource.isObsolete || !resource.isDiscovered) {
+                continue;
+            }
+            html += "<tr><td>" + resource.name + "</td><td>" + resource.value.toFixed(this.engine.resources[i].isDecimal ? 2 : 0) + "</td><td>";
+            if (resource.hasCap && this.engine.playerData.limitOnResourcesWasHit)
+                html += "/ " + resource.cap;
             html += "</td><td>";
-            if (this.engine.resources[i].rate != 0)
-                html += "(" + RenderUtils.beautifyFloat(this.engine.resources[i].rate * 1000) + ")";
+            if (resource.rate != 0)
+                html += "(" + RenderUtils.beautifyFloat(resource.rate * 1000) + ")";
             html += "</td></tr>\n";
         }
         html += "</table>";
@@ -842,9 +927,11 @@ var Stat = (function () {
     Stat.prototype.updateStart = function (timeDelta) {
         this._value += this._rateCache * timeDelta;
     };
-    Stat.prototype.updateEnd = function () {
-        if (this.hasCap && this._value > this._capCache)
+    Stat.prototype.updateEnd = function (engine) {
+        if (this.hasCap && this._value > this._capCache) {
             this._value = this._capCache;
+            engine.playerData.limitOnResourcesWasHit = true;
+        }
         else if (this._value < 0)
             this._value = 0;
     };

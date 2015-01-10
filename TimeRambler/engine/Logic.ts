@@ -25,7 +25,7 @@
         if (!this.isActive)
             return;
         var newStamp: number = new Date().getTime();
-        var delta: number = newStamp - this.timeStamp;
+        var delta: number = Math.min(newStamp - this.timeStamp, Logic.UPDATE_PERIOD * 1.5);
         delta *= this.engine.timeScale / this.engine.stepScale;
         this.timeStamp = newStamp;
         this.engine.update(delta);

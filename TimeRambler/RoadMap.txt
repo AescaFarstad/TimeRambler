@@ -41,4 +41,7 @@
 
 0.010
 	gradual unlock of actions and resources
+	better numbers formatting
+
+0.011
 	Research

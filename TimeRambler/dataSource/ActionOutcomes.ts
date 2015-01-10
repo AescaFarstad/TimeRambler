@@ -15,6 +15,7 @@
             logGame("The child died young.");
             logEngine("pop on small hunt didn't die because population is too low");
         }
+        engine.playerData.numberOfGrows++;
         return null;
     }
 
@@ -22,6 +23,7 @@
     public static growSuccessExec(action: Action, outcome: ActionOutcome, engine: Engine): void {
         logGame("Family grows. <b>Population increased by 1.</b>");
         engine.resourcesById("pop").modify(1, engine);
+        engine.playerData.numberOfGrows++;
     }
 
     //small hunt
@@ -39,6 +41,7 @@
             logGame("The hunters returned empty-handed.");
             logEngine("pop on small hunt didn't die because population is too low");
         }
+        engine.playerData.numberOfSmallHunts++;
         return null
     }
 
@@ -54,6 +57,8 @@
         }
         engine.resourcesById("food").modify(20, engine);
         engine.resourcesById("wood").modify(1, engine);
+        engine.resourcesById("wood").isDiscovered = true;
+        engine.playerData.numberOfSmallHunts++;
     }
 
     public static smallHuntMinorSuccess2HistoryEntry: string = "Minor success. Hunters sustained injuries. <b>Food +30.</b>";
@@ -67,6 +72,7 @@
             logEngine("pop on small hunt didn't die because population is too low");
         }
         engine.resourcesById("food").modify(30, engine);
+        engine.playerData.numberOfSmallHunts++;
     }
 
     public static smallHuntMinorSuccess3HistoryEntry: string = "Minor success. Hunters sustained injuries. <b>Food +40.</b>";
@@ -80,6 +86,7 @@
             logEngine("pop on small hunt didn't die because population is too low");
         }
         engine.resourcesById("food").modify(40, engine);
+        engine.playerData.numberOfSmallHunts++;
     }
 
     public static smallHuntMajorSuccess1HistoryEntry: string = "Success! <b>Food +40; Wood +3.</b>";
@@ -87,6 +94,8 @@
         logGame("The hunt was a major success! <b>Food +40; Wood +3.</b> And the best thing - everyone returned home uninjured!");
         engine.resourcesById("food").modify(40, engine);
         engine.resourcesById("wood").modify(3, engine);
+        engine.resourcesById("wood").isDiscovered = true;
+        engine.playerData.numberOfSmallHunts++;
     }
 
     public static smallHuntMajorSuccess2HistoryEntry: string = "Success! <b>Food +50; Wood +1.</b>";
@@ -94,6 +103,8 @@
         logGame("The hunt was a major success! <b>Food +50; Wood +1.</b> And the best thing - everyone returned home uninjured!");
         engine.resourcesById("food").modify(50, engine);
         engine.resourcesById("wood").modify(1, engine);
+        engine.resourcesById("wood").isDiscovered = true;
+        engine.playerData.numberOfSmallHunts++;
     }
 
     //great hunt
@@ -102,5 +113,6 @@
         logGame("The Great Hunt was almost failed due to coordination issues. It takes both great courage and strength to combat such large animals. You have played the key part here and everybody recognizes your contribution. <b>Food +150; Wood +25</b>");
         engine.resourcesById("food").modify(150, engine);
         engine.resourcesById("wood").modify(25, engine);
+        action.isObsolete = true;
     }
 } 
