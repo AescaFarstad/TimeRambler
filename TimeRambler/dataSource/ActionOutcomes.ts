@@ -110,7 +110,11 @@
     //great hunt
     public static greatHuntHistoryEntry: string = "You are not supposed to ever read this. Unsee now!";
     public static greatHunt(action: Action, outcome: ActionOutcome, engine: Engine): void {
-        logGame("The Great Hunt was almost failed due to coordination issues. It takes both great courage and strength to combat such large animals. You have played the key part here and everybody recognizes your contribution. <b>Food +150; Wood +25</b>");
+        logGame("The Great Hunt had almost failed due to coordination issues. " +
+            "Truly unprecedented is the courage and strength it took to combat such large animals. " + 
+            "It was most brave of you to take the matters in your own hands and unite the frightened villagers. " +
+            "Songs and ballads would be made about this event. Unfortunately <b >Acoustics</b> and <b>Drama'n'Poetry</b> still aren't researched." +
+            "So for now you will have to settle on the fact that everybody recognizes your contribution in prose.<b> Food + 150; Wood + 25 </b> ");
         engine.resourcesById("food").modify(150, engine);
         engine.resourcesById("wood").modify(25, engine);
         action.isObsolete = true;

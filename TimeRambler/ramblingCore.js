@@ -99,13 +99,6 @@ var Action = (function () {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(Action.prototype, "outcomeHistory", {
-        get: function () {
-            return this._outcomeHistory;
-        },
-        enumerable: true,
-        configurable: true
-    });
     Action.prototype.outcomeById = function (outcomeId) {
         for (var i = 0; i < this.outcomes.length; i++) {
             if (this.outcomes[i].id == outcomeId)
@@ -147,13 +140,7 @@ var Action = (function () {
             console.log("WARNING: action outcomes redirection chain too long!", this.id);
         }
         else {
-            if (this._outcomeHistory == null) {
-                this._outcomeHistory = {};
-            }
-            if (this._outcomeHistory[outcome.id] != null)
-                this._outcomeHistory[outcome.id].count++;
-            else
-                this._outcomeHistory[outcome.id] = { count: 1, entry: outcome.historyEntry };
+            outcome.count++;
             this._lastOutcome = outcome;
         }
     };
@@ -161,6 +148,7 @@ var Action = (function () {
 })();
 var ActionOutcome = (function () {
     function ActionOutcome(id, weight, exec, historyEntry) {
+        this.count = 0;
         this.weight = weight;
         this.exec = exec;
         this.id = id;
@@ -261,7 +249,7 @@ var ActionOutcomes = (function () {
         engine.playerData.numberOfSmallHunts++;
     };
     ActionOutcomes.greatHunt = function (action, outcome, engine) {
-        logGame("The Great Hunt was almost failed due to coordination issues. It takes both great courage and strength to combat such large animals. You have played the key part here and everybody recognizes your contribution. <b>Food +150; Wood +25</b>");
+        logGame("The Great Hunt had almost failed due to coordination issues. " + "Truly unprecedented is the courage and strength it took to combat such large animals. " + "It was most brave of you to take the matters in your own hands and unite the frightened villagers. " + "Songs and ballads would be made about this event. Unfortunately <b >Acoustics</b> and <b>Drama'n'Poetry</b> still aren't researched." + "So for now you will have to settle on the fact that everybody recognizes your contribution in prose.<b> Food + 150; Wood + 25 </b> ");
         engine.resourcesById("food").modify(150, engine);
         engine.resourcesById("wood").modify(25, engine);
         action.isObsolete = true;
@@ -306,6 +294,7 @@ var ActionsRenderer = (function () {
             if (this.engine.actions[i].viewData.isRendered && (this.engine.actions[i].isObsolete || !this.engine.actions[i].isDiscovered || !this.engine.actions[i].viewData.isValid(this.engine.actions[i], this.engine))) {
                 var nextSibling = this.engine.actions[i].viewData.element.nextSibling;
                 this.list.removeChild(this.engine.actions[i].viewData.element);
+                this.engine.actions[i].viewData.isRendered = false;
                 isRemoved = true;
             }
             if (isRemoved || !this.engine.actions[i].viewData.isRendered) {
@@ -332,7 +321,7 @@ var ActionsRenderer = (function () {
     };
     ActionsRenderer.prototype.updateProgress = function (action) {
         //action.viewData.headerElement.innerText = [action.name, " ", (action.progress * 100).toFixed(0), "% ( ", RenderUtils.beautifyInt(action.timeLeft / 1000), " s. left)"].join("");
-        action.viewData.progressElement.innerText = [(action.progress * 100).toFixed(0), "% \n( ", RenderUtils.beautifyInt(action.timeLeft / 1000), " s. left)"].join("");
+        action.viewData.progressElement.innerText = [(action.progress * 100).toFixed(0), "% \n( ", (action.timeLeft / 1000).toFixed(), " s. left)"].join("");
         var context = action.viewData.canvas.getContext("2d");
         context.fillStyle = "#0000FF";
         context.fillRect(0, 0, action.viewData.canvas.width * action.progress, action.viewData.canvas.height);
@@ -358,10 +347,10 @@ var ActionsRenderer = (function () {
             outerElement.appendChild(headerDiv);
         }
         var contentDiv = HelperHTML.element("div", "actionContent");
-        contentDiv.appendChild(HelperHTML.element("div", "actionContentText", "Pop: " + action.pop));
-        contentDiv.appendChild(HelperHTML.element("div", "actionContentText", "Time: " + Math.ceil(action.time / 1000) + " sec."));
+        contentDiv.appendChild(HelperHTML.element("div", "actionContentText", "Employs workers: " + action.pop));
+        contentDiv.appendChild(HelperHTML.element("div", "actionContentText", "Duration: " + Math.ceil(action.time / 1000) + " sec."));
         if (!action.resources.isEmpty) {
-            var innerDiv = HelperHTML.element("div", "actionContentText", "Requires:");
+            var innerDiv = HelperHTML.element("div", "actionContentText", "Consumes");
             for (var i = 0; i < action.resources.resources.length; i++) {
                 var resource = this.engine.resourcesById(action.resources.resources[i]);
                 innerDiv.appendChild(HelperHTML.element("div", "actionContent_Requirement", resource.name + ": " + action.resources.quantaties[i]));
@@ -380,7 +369,7 @@ var ActionsRenderer = (function () {
             action.viewData.isContentOpen = !action.viewData.isContentOpen;
             contentDiv.style.display = action.viewData.isContentOpen ? "block" : "none";
         };
-        if (action.outcomeHistory) {
+        if (action.lastOutcome) {
             var tooptil = HelperHTML.element("div", "testTooltip");
             var tHeaderText = HelperHTML.element("span", "actionHeaderText", "Known possible outcomes");
             var tHeader = HelperHTML.element("div", "actionHeader tooltipHeader");
@@ -388,12 +377,18 @@ var ActionsRenderer = (function () {
             var tContent = HelperHTML.element("div", "tooltipContent");
             var tTable = HelperHTML.element("table", "tooltipTable");
             tTable.cellSpacing = "15";
-            for (var outcome in action.outcomeHistory) {
+            for (var i = 0; i < action.outcomes.length; i++) {
+                if (action.outcomes[i].count == 0) {
+                    continue;
+                }
                 var row = tTable.insertRow();
                 var cell = row.insertCell();
-                cell.innerHTML = action.outcomeHistory[outcome].count;
+                cell.innerHTML = action.outcomes[i].count.toString();
                 cell = row.insertCell();
-                cell.innerHTML = action.outcomeHistory[outcome].entry;
+                cell.innerHTML = action.outcomes[i].historyEntry;
+                if (action.lastOutcome === action.outcomes[i]) {
+                    row.className = "tooltipLastOutcome";
+                }
             }
             tContent.appendChild(tTable);
             tooptil.appendChild(tHeader);
@@ -476,18 +471,18 @@ var DataSource = (function () {
         woodResource.insertCapModifier(new Modifier("init", 50, 0));
         engine.addResource(woodResource);
         //Grow
-        var growFailOutcome = new ActionOutcome("fail", 35, ActionOutcomes.growFailExec, ActionOutcomes.growFailHistoryEntry);
-        var growSuccessOutcome = new ActionOutcome("success", 65, ActionOutcomes.growSuccessExec, ActionOutcomes.growSuccessHistoryEntry);
+        var growFailOutcome = new ActionOutcome("fail", 30, ActionOutcomes.growFailExec, ActionOutcomes.growFailHistoryEntry);
+        var growSuccessOutcome = new ActionOutcome("success", 700, ActionOutcomes.growSuccessExec, ActionOutcomes.growSuccessHistoryEntry);
         var growAction = new Action("grow", "Raise a child", 2, 10 * 1000, new ResourceRequirement(["food"], [10]), [growFailOutcome, growSuccessOutcome]);
         engine.addAction(growAction);
         //Small hunt
-        var smallHuntFailOutcome = new ActionOutcome("fail", 15, ActionOutcomes.smallHuntFailExec, ActionOutcomes.smallHuntFailHistoryEntry);
-        var smallHuntMinorSuccess1Outcome = new ActionOutcome("minorSuccess1", 10, ActionOutcomes.smallHuntMinorSuccess1Exec, ActionOutcomes.smallHuntMinorSuccess1HistoryEntry);
+        var smallHuntFailOutcome = new ActionOutcome("fail", 10, ActionOutcomes.smallHuntFailExec, ActionOutcomes.smallHuntFailHistoryEntry);
+        var smallHuntMinorSuccess1Outcome = new ActionOutcome("minorSuccess1", 5, ActionOutcomes.smallHuntMinorSuccess1Exec, ActionOutcomes.smallHuntMinorSuccess1HistoryEntry);
         var smallHuntMinorSuccess2Outcome = new ActionOutcome("minorSuccess2", 10, ActionOutcomes.smallHuntMinorSuccess2Exec, ActionOutcomes.smallHuntMinorSuccess2HistoryEntry);
         var smallHuntMinorSuccess3Outcome = new ActionOutcome("minorSuccess3", 10, ActionOutcomes.smallHuntMinorSuccess3Exec, ActionOutcomes.smallHuntMinorSuccess3HistoryEntry);
-        var smallHuntMajorSuccess1Outcome = new ActionOutcome("majoruccess1", 15, ActionOutcomes.smallHuntMajorSuccess1Exec, ActionOutcomes.smallHuntMajorSuccess1HistoryEntry);
-        var smallHuntMajorSuccess2Outcome = new ActionOutcome("majoruccess2", 15, ActionOutcomes.smallHuntMajorSuccess2Exec, ActionOutcomes.smallHuntMajorSuccess2HistoryEntry);
-        var smallHuntAction = new Action("smallHunt", "Hunt", 3, 1 * 1000, new ResourceRequirement([], []), [smallHuntFailOutcome, smallHuntMinorSuccess1Outcome, smallHuntMinorSuccess2Outcome, smallHuntMinorSuccess3Outcome, smallHuntMajorSuccess1Outcome, smallHuntMajorSuccess2Outcome]);
+        var smallHuntMajorSuccess1Outcome = new ActionOutcome("majoruccess1", 25, ActionOutcomes.smallHuntMajorSuccess1Exec, ActionOutcomes.smallHuntMajorSuccess1HistoryEntry);
+        var smallHuntMajorSuccess2Outcome = new ActionOutcome("majoruccess2", 25, ActionOutcomes.smallHuntMajorSuccess2Exec, ActionOutcomes.smallHuntMajorSuccess2HistoryEntry);
+        var smallHuntAction = new Action("smallHunt", "Hunt", 3, 3 * 1000, new ResourceRequirement([], []), [smallHuntFailOutcome, smallHuntMinorSuccess1Outcome, smallHuntMinorSuccess2Outcome, smallHuntMinorSuccess3Outcome, smallHuntMajorSuccess1Outcome, smallHuntMajorSuccess2Outcome]);
         engine.addAction(smallHuntAction);
         smallHuntAction.isDiscovered = true;
         smallHuntAction.viewData.isContentOpen = true;
@@ -824,7 +819,27 @@ var RenderUtils = (function () {
     function RenderUtils() {
     }
     RenderUtils.beautifyFloat = function (num) {
-        var absVal = Math.abs(num);
+        if (!num) {
+            return "0";
+        }
+        var len = RenderUtils.postfixes.length;
+        for (var i = 0; i < len; i++) {
+            var p = RenderUtils.postfixes[i];
+            if (num >= p.limit) {
+                return RenderUtils.beautifySimpleFloat(num / p.divisor) + p.postfix[0];
+            }
+        }
+        return RenderUtils.beautifySimpleFloat(num);
+    };
+    RenderUtils.beautifySimpleFloat = function (num) {
+        if (Math.floor(num) == num)
+            return num.toFixed();
+        else
+            return num.toFixed(RenderUtils.precision);
+    };
+    /*
+    public static beautifyFloat(num: number): string {
+        var absVal: number = Math.abs(num);
         if (absVal < 1)
             return num.toFixed(3);
         if (absVal < 10)
@@ -839,16 +854,27 @@ var RenderUtils = (function () {
             return Math.floor(num / 1000).toFixed(0) + "K";
         if (absVal < 10000000)
             return Math.floor(num / 1000000).toFixed(1) + "M";
+        
         return Math.floor(num / 1000000).toFixed(1) + "M";
-    };
-    RenderUtils.beautifyInt = function (num) {
-        var absVal = Math.abs(num);
+    }
+
+    public static beautifyInt(num: number): string {
+        var absVal: number = Math.abs(num);
         if (absVal < 1000)
             return num.toFixed(0);
         if (absVal < 1000000)
             return Math.floor(num / 1000).toFixed(0) + "K";
         return Math.floor(num / 1000000).toFixed(0) + "M";
-    };
+    }*/
+    /**
+     * Converts raw resource value (e.g. 12345.67890) to a formatted representation (i.e. 12.34K)
+     * Shamelessly copied from kittens game where the core of it was in turn copied from Sandcastle Builder
+     */
+    RenderUtils.postfixes = [
+        { limit: 1e6, divisor: 1e6, postfix: ['M', ' Mega'] },
+        { limit: 9e3, divisor: 1e3, postfix: ['K', ' Kilo'] },
+    ];
+    RenderUtils.precision = 2;
     return RenderUtils;
 })();
 var ResourceRequirement = (function () {
@@ -895,9 +921,9 @@ var ResourcesRenderer = (function () {
             if (resource.isObsolete || !resource.isDiscovered) {
                 continue;
             }
-            html += "<tr><td>" + resource.name + "</td><td>" + resource.value.toFixed(this.engine.resources[i].isDecimal ? 2 : 0) + "</td><td>";
+            html += "<tr><td>" + resource.name + "</td><td>" + RenderUtils.beautifyFloat(resource.value) + "</td><td>";
             if (resource.hasCap && this.engine.playerData.limitOnResourcesWasHit)
-                html += "/ " + resource.cap;
+                html += "/ " + RenderUtils.beautifyFloat(resource.cap);
             html += "</td><td>";
             if (resource.rate != 0)
                 html += "(" + RenderUtils.beautifyFloat(resource.rate * 1000) + ")";

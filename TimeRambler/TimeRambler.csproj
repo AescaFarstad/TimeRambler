@@ -19,6 +19,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Content Include="app.css" />
+    <Content Include="Guide.txt" />
     <Content Include="index.html" />
     <Content Include="RoadMap.txt" />
     <Content Include="web.config" />

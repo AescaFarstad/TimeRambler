@@ -10,7 +10,6 @@
     public outcomes: Array<ActionOutcome>;
     public viewData: ActionViewData;
     private _lastOutcome: ActionOutcome;
-    private _outcomeHistory: Object;
     public isDiscovered: boolean;
     public isObsolete: boolean;
 
@@ -60,10 +59,6 @@
         return this._timeLeft;
     }
 
-    public get outcomeHistory(): Object {
-        return this._outcomeHistory;
-    }
-
     public outcomeById(outcomeId: string): ActionOutcome {
         for (var i: number = 0; i < this.outcomes.length; i++) {
             if (this.outcomes[i].id == outcomeId)
@@ -107,13 +102,7 @@
             console.log("WARNING: action outcomes redirection chain too long!", this.id);
         }
         else {
-            if (this._outcomeHistory == null) {
-                this._outcomeHistory = {};
-            }
-            if (this._outcomeHistory[outcome.id] != null)
-                this._outcomeHistory[outcome.id].count++;
-            else
-                this._outcomeHistory[outcome.id] = { count: 1, entry: outcome.historyEntry };
+            outcome.count++;
             this._lastOutcome = outcome;
         }
     }

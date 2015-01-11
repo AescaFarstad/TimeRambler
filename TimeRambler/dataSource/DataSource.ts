@@ -42,21 +42,21 @@
         engine.addResource(woodResource);
 
         //Grow
-        var growFailOutcome: ActionOutcome = new ActionOutcome("fail", 35, ActionOutcomes.growFailExec, ActionOutcomes.growFailHistoryEntry);
-        var growSuccessOutcome: ActionOutcome = new ActionOutcome("success", 65, ActionOutcomes.growSuccessExec, ActionOutcomes.growSuccessHistoryEntry);
+        var growFailOutcome: ActionOutcome = new ActionOutcome("fail", 30, ActionOutcomes.growFailExec, ActionOutcomes.growFailHistoryEntry);
+        var growSuccessOutcome: ActionOutcome = new ActionOutcome("success", 700, ActionOutcomes.growSuccessExec, ActionOutcomes.growSuccessHistoryEntry);
 
         var growAction: Action = new Action("grow", "Raise a child", 2, 10 * 1000, new ResourceRequirement(["food"], [10]), [growFailOutcome, growSuccessOutcome]);
         engine.addAction(growAction);
 
         //Small hunt
-        var smallHuntFailOutcome: ActionOutcome = new ActionOutcome("fail", 15, ActionOutcomes.smallHuntFailExec, ActionOutcomes.smallHuntFailHistoryEntry);
-        var smallHuntMinorSuccess1Outcome: ActionOutcome = new ActionOutcome("minorSuccess1", 10, ActionOutcomes.smallHuntMinorSuccess1Exec, ActionOutcomes.smallHuntMinorSuccess1HistoryEntry);
+        var smallHuntFailOutcome: ActionOutcome = new ActionOutcome("fail", 10, ActionOutcomes.smallHuntFailExec, ActionOutcomes.smallHuntFailHistoryEntry);
+        var smallHuntMinorSuccess1Outcome: ActionOutcome = new ActionOutcome("minorSuccess1", 5, ActionOutcomes.smallHuntMinorSuccess1Exec, ActionOutcomes.smallHuntMinorSuccess1HistoryEntry);
         var smallHuntMinorSuccess2Outcome: ActionOutcome = new ActionOutcome("minorSuccess2", 10, ActionOutcomes.smallHuntMinorSuccess2Exec, ActionOutcomes.smallHuntMinorSuccess2HistoryEntry);
         var smallHuntMinorSuccess3Outcome: ActionOutcome = new ActionOutcome("minorSuccess3", 10, ActionOutcomes.smallHuntMinorSuccess3Exec, ActionOutcomes.smallHuntMinorSuccess3HistoryEntry);
-        var smallHuntMajorSuccess1Outcome: ActionOutcome = new ActionOutcome("majoruccess1", 15, ActionOutcomes.smallHuntMajorSuccess1Exec, ActionOutcomes.smallHuntMajorSuccess1HistoryEntry);
-        var smallHuntMajorSuccess2Outcome: ActionOutcome = new ActionOutcome("majoruccess2", 15, ActionOutcomes.smallHuntMajorSuccess2Exec, ActionOutcomes.smallHuntMajorSuccess2HistoryEntry);
+        var smallHuntMajorSuccess1Outcome: ActionOutcome = new ActionOutcome("majoruccess1", 25, ActionOutcomes.smallHuntMajorSuccess1Exec, ActionOutcomes.smallHuntMajorSuccess1HistoryEntry);
+        var smallHuntMajorSuccess2Outcome: ActionOutcome = new ActionOutcome("majoruccess2", 25, ActionOutcomes.smallHuntMajorSuccess2Exec, ActionOutcomes.smallHuntMajorSuccess2HistoryEntry);
 
-        var smallHuntAction: Action = new Action("smallHunt", "Hunt", 3, 1 * 1000, new ResourceRequirement([], []), [smallHuntFailOutcome,
+        var smallHuntAction: Action = new Action("smallHunt", "Hunt", 3, 3 * 1000, new ResourceRequirement([], []), [smallHuntFailOutcome,
             smallHuntMinorSuccess1Outcome, smallHuntMinorSuccess2Outcome, smallHuntMinorSuccess3Outcome, smallHuntMajorSuccess1Outcome, smallHuntMajorSuccess2Outcome]);
         engine.addAction(smallHuntAction);
 

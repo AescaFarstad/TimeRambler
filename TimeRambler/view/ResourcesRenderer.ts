@@ -19,9 +19,9 @@
                 continue;
             }
             html += "<tr><td>" + resource.name + "</td><td>" +
-            resource.value.toFixed(this.engine.resources[i].isDecimal ? 2 : 0) + "</td><td>";
+            RenderUtils.beautifyFloat(resource.value)/*.toFixed(this.engine.resources[i].isDecimal ? 2 : 0)*/ + "</td><td>";
             if (resource.hasCap && this.engine.playerData.limitOnResourcesWasHit)
-                html += "/ " + resource.cap;
+                html += "/ " + RenderUtils.beautifyFloat(resource.cap);
             html += "</td><td>";
             if (resource.rate != 0)
                 html += "(" + RenderUtils.beautifyFloat(resource.rate * 1000) + ")";

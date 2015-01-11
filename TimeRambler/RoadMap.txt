@@ -29,7 +29,6 @@
 
 0.008
 	Actions
-		Last outcome
 		Known outcomes
 
 0.009
@@ -37,11 +36,15 @@
 		collapsible
 		background gradient animation
 
-== I'm here ==
-
 0.010
 	gradual unlock of actions and resources
 	better numbers formatting
+	last outcome
+
+== I'm here ==
 
 0.011
 	Research
+
+benchmark
+time till cap or depletion
