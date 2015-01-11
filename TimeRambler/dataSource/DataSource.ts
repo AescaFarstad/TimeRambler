@@ -43,7 +43,7 @@
 
         //Grow
         var growFailOutcome: ActionOutcome = new ActionOutcome("fail", 30, ActionOutcomes.growFailExec, ActionOutcomes.growFailHistoryEntry);
-        var growSuccessOutcome: ActionOutcome = new ActionOutcome("success", 700, ActionOutcomes.growSuccessExec, ActionOutcomes.growSuccessHistoryEntry);
+        var growSuccessOutcome: ActionOutcome = new ActionOutcome("success", 90, ActionOutcomes.growSuccessExec, ActionOutcomes.growSuccessHistoryEntry);
 
         var growAction: Action = new Action("grow", "Raise a child", 2, 10 * 1000, new ResourceRequirement(["food"], [10]), [growFailOutcome, growSuccessOutcome]);
         engine.addAction(growAction);

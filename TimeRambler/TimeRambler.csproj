@@ -51,6 +51,7 @@
     <TypeScriptCompile Include="view\ResourcesRenderer.ts" />
     <TypeScriptCompile Include="engine\Stat.ts" />
     <TypeScriptCompile Include="engine\StatPrototype.ts" />
+    <TypeScriptCompile Include="view\VisibilityData.ts" />
   </ItemGroup>
   <ItemGroup>
     <None Include="web.Debug.config">

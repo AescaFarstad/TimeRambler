@@ -10,8 +10,9 @@
         this.root = root;
     }
 
-    public update(timeDelta: number): void {
-        this.root.innerHTML = "Elapsed time: " + this.toTimeString(this.engine.time) + "<br>scale: " + (this.engine.timeScale/this.engine.stepScale).toFixed(1);
+    public update(timeDelta: number, visibilityData: VisibilityData): void {
+        if (visibilityData.visibleTab == VisibilityData.TAB_ACTIONS)
+            this.root.innerHTML = "Elapsed time: " + this.toTimeString(this.engine.time) + "<br>scale: " + (this.engine.timeScale/this.engine.stepScale).toFixed(1);
     }
 
     public load(root: HTMLElement, engine: Engine): void {

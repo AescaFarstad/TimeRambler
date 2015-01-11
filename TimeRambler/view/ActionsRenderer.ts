@@ -12,7 +12,10 @@
         this.root = root;
     }
 
-    public update(timeDelta: number): void {
+    public update(timeDelta: number, visibilityData: VisibilityData): void {
+        if (visibilityData.visibleTab != VisibilityData.TAB_ACTIONS) {
+            return;
+        }
         for (var i: number = 0; i < this.engine.actions.length; i++) {
             var isRemoved: boolean = false;
             if (this.engine.actions[i].viewData.isRendered &&

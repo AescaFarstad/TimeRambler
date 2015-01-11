@@ -10,7 +10,7 @@
         this.root = root;
     }
 
-    public update(timeDelta: number): void {
+    public update(timeDelta: number, visibilityData: VisibilityData): void {
         var html: string = "<table class=\"resourceTable\" cellspacing=\"5\">";
 
         for (var i: number = 0; i < this.engine.resources.length; i++) {

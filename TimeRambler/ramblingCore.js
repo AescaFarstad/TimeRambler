@@ -1,3 +1,214 @@
+window.onload = function () {
+    var el = document.getElementById('content');
+    var binder = new Binder();
+    binder.create(el);
+    binder.start();
+};
+var Binder = (function () {
+    function Binder() {
+    }
+    Binder.prototype.create = function (rootElement) {
+        this.dataSource = new DataSource();
+        this.engine = new Engine();
+        this.renderer = new Renderer();
+        this.input = new Input();
+        this.logic = new Logic();
+        this.input.load(this.engine);
+        this.renderer.load(rootElement, this.engine, this.input);
+        this.logic.load(this.engine, this.renderer);
+        this.dataSource.initEngine(this.engine);
+    };
+    Binder.prototype.start = function () {
+        this.logic.start();
+    };
+    return Binder;
+})();
+var ActionOutcomes = (function () {
+    function ActionOutcomes() {
+    }
+    ActionOutcomes.growFailExec = function (action, outcome, engine) {
+        if (action.lastOutcome == outcome) {
+            logEngine("grow redirected to success because lastOutcome == outcome");
+            return action.outcomeById("success");
+        }
+        if (engine.resourcesById("pop").value > 3) {
+            engine.resourcesById("pop").modify(-1, engine);
+            logGame("Mother has died during the childbirth. No one could feed the child and he died too. <b>Population decreased by 1.</b>");
+        }
+        else {
+            logGame("The child died young.");
+            logEngine("pop on small hunt didn't die because population is too low");
+        }
+        engine.playerData.numberOfGrows++;
+        return null;
+    };
+    ActionOutcomes.growSuccessExec = function (action, outcome, engine) {
+        logGame("Family grows. <b>Population increased by 1.</b>");
+        engine.resourcesById("pop").modify(1, engine);
+        engine.playerData.numberOfGrows++;
+    };
+    ActionOutcomes.smallHuntFailExec = function (action, outcome, engine) {
+        if (action.lastOutcome == outcome) {
+            logEngine("small hunt redirected to success because lastOutcome == outcome");
+            return action.outcomeById("minorSuccess3");
+        }
+        if (engine.resourcesById("pop").value > 3) {
+            engine.resourcesById("pop").modify(-1, engine);
+            logGame("The hunter became the prey. <b>Population decreased by 1.</b>");
+        }
+        else {
+            logGame("The hunters returned empty-handed.");
+            logEngine("pop on small hunt didn't die because population is too low");
+        }
+        engine.playerData.numberOfSmallHunts++;
+        return null;
+    };
+    ActionOutcomes.smallHuntMinorSuccess1Exec = function (action, outcome, engine) {
+        if (engine.resourcesById("pop").value > 3) {
+            logGame("The hunt was a dubious success. <b>Food +20; Wood + 1. Population decreased by 1.</b>");
+            engine.resourcesById("pop").modify(-1, engine);
+        }
+        else {
+            logGame("The hunt was a minor success. <b>Food +20; Wood + 1.</b> The hunters are injured but overall fine.");
+            logEngine("pop on small hunt didn't die because population is too low");
+        }
+        engine.resourcesById("food").modify(20, engine);
+        engine.resourcesById("wood").modify(1, engine);
+        engine.resourcesById("wood").isDiscovered = true;
+        engine.playerData.numberOfSmallHunts++;
+    };
+    ActionOutcomes.smallHuntMinorSuccess2Exec = function (action, outcome, engine) {
+        if (engine.resourcesById("pop").value > 3) {
+            logGame("The hunt was a dubious success. <b>Food +30. Population decreased by 1.</b>");
+            engine.resourcesById("pop").modify(-1, engine);
+        }
+        else {
+            logGame("The hunt was a minor success. <b>Food +30.</b> The hunters are injured but overall fine.");
+            logEngine("pop on small hunt didn't die because population is too low");
+        }
+        engine.resourcesById("food").modify(30, engine);
+        engine.playerData.numberOfSmallHunts++;
+    };
+    ActionOutcomes.smallHuntMinorSuccess3Exec = function (action, outcome, engine) {
+        if (engine.resourcesById("pop").value > 3) {
+            logGame("The hunt was a dubious success. <b>Food +40. Population decreased by 1.</b>");
+            engine.resourcesById("pop").modify(-1, engine);
+        }
+        else {
+            logGame("The hunt was a minor success. <b>Food +40.</b> The hunters are injured but overall fine.");
+            logEngine("pop on small hunt didn't die because population is too low");
+        }
+        engine.resourcesById("food").modify(40, engine);
+        engine.playerData.numberOfSmallHunts++;
+    };
+    ActionOutcomes.smallHuntMajorSuccess1Exec = function (action, outcome, engine) {
+        logGame("The hunt was a major success! <b>Food +40; Wood +3.</b> And the best thing - everyone returned home uninjured!");
+        engine.resourcesById("food").modify(40, engine);
+        engine.resourcesById("wood").modify(3, engine);
+        engine.resourcesById("wood").isDiscovered = true;
+        engine.playerData.numberOfSmallHunts++;
+    };
+    ActionOutcomes.smallHuntMajorSuccess2Exec = function (action, outcome, engine) {
+        logGame("The hunt was a major success! <b>Food +50; Wood +1.</b> And the best thing - everyone returned home uninjured!");
+        engine.resourcesById("food").modify(50, engine);
+        engine.resourcesById("wood").modify(1, engine);
+        engine.resourcesById("wood").isDiscovered = true;
+        engine.playerData.numberOfSmallHunts++;
+    };
+    ActionOutcomes.greatHunt = function (action, outcome, engine) {
+        logGame("The Great Hunt had almost failed due to coordination issues. " + "Truly unprecedented is the courage and strength it took to combat such large animals. " + "It was most brave of you to take the matters in your own hands and unite the frightened villagers. " + "Songs and ballads would be made about this event. Unfortunately <b >Acoustics</b> and <b>Drama'n'Poetry</b> still aren't researched." + "So for now you will have to settle on the fact that everybody recognizes your contribution in prose.<b> Food + 150; Wood + 25 </b> ");
+        engine.resourcesById("food").modify(150, engine);
+        engine.resourcesById("wood").modify(25, engine);
+        action.isObsolete = true;
+    };
+    //grow
+    ActionOutcomes.growFailHistoryEntry = "Birth complications. Don't ask.";
+    ActionOutcomes.growSuccessHistoryEntry = "The wonder of life has happened in it's full glory.";
+    //small hunt
+    ActionOutcomes.smallHuntFailHistoryEntry = "Total failure.";
+    ActionOutcomes.smallHuntMinorSuccess1HistoryEntry = "Minor success. Hunters sustained injuries. <b>Food +20; Wood + 1.</b>";
+    ActionOutcomes.smallHuntMinorSuccess2HistoryEntry = "Minor success. Hunters sustained injuries. <b>Food +30.</b>";
+    ActionOutcomes.smallHuntMinorSuccess3HistoryEntry = "Minor success. Hunters sustained injuries. <b>Food +40.</b>";
+    ActionOutcomes.smallHuntMajorSuccess1HistoryEntry = "Success! <b>Food +40; Wood +3.</b>";
+    ActionOutcomes.smallHuntMajorSuccess2HistoryEntry = "Success! <b>Food +50; Wood +1.</b>";
+    //great hunt
+    ActionOutcomes.greatHuntHistoryEntry = "You are not supposed to ever read this. Unsee now!";
+    return ActionOutcomes;
+})();
+var DataSource = (function () {
+    function DataSource() {
+    }
+    DataSource.prototype.initEngine = function (engine) {
+        GameRules.init();
+        var popResource = new Stat("pop", "pop");
+        popResource.insertCapModifier(new Modifier("init", 10, 0));
+        popResource.isDecimal = false;
+        engine.addResource(popResource);
+        popResource.isDiscovered = true;
+        var unemployedResource = new Stat("unemployed", "unemployed");
+        unemployedResource.onValueChanged = this.unemployedRule;
+        unemployedResource.isDecimal = false;
+        unemployedResource.hasCap = false;
+        unemployedResource.isDiscovered = true;
+        engine.addResource(unemployedResource);
+        var foodResource = new Stat("food", "food");
+        foodResource.setValue(15, engine);
+        foodResource.insertCapModifier(new Modifier("init", 20, 0));
+        foodResource.insertCapModifier(new Modifier("pop", 0, 0));
+        foodResource.insertRateModifier(new Modifier("pop", 0, 0));
+        foodResource.isDiscovered = true;
+        engine.addResource(foodResource);
+        popResource.onValueChanged = this.popRule;
+        popResource.setValue(3, engine);
+        engine.addRule(GameRules.foodRule);
+        var woodResource = new Stat("wood", "wood");
+        woodResource.insertCapModifier(new Modifier("init", 50, 0));
+        engine.addResource(woodResource);
+        //Grow
+        var growFailOutcome = new ActionOutcome("fail", 30, ActionOutcomes.growFailExec, ActionOutcomes.growFailHistoryEntry);
+        var growSuccessOutcome = new ActionOutcome("success", 90, ActionOutcomes.growSuccessExec, ActionOutcomes.growSuccessHistoryEntry);
+        var growAction = new Action("grow", "Raise a child", 2, 10 * 1000, new ResourceRequirement(["food"], [10]), [growFailOutcome, growSuccessOutcome]);
+        engine.addAction(growAction);
+        //Small hunt
+        var smallHuntFailOutcome = new ActionOutcome("fail", 10, ActionOutcomes.smallHuntFailExec, ActionOutcomes.smallHuntFailHistoryEntry);
+        var smallHuntMinorSuccess1Outcome = new ActionOutcome("minorSuccess1", 5, ActionOutcomes.smallHuntMinorSuccess1Exec, ActionOutcomes.smallHuntMinorSuccess1HistoryEntry);
+        var smallHuntMinorSuccess2Outcome = new ActionOutcome("minorSuccess2", 10, ActionOutcomes.smallHuntMinorSuccess2Exec, ActionOutcomes.smallHuntMinorSuccess2HistoryEntry);
+        var smallHuntMinorSuccess3Outcome = new ActionOutcome("minorSuccess3", 10, ActionOutcomes.smallHuntMinorSuccess3Exec, ActionOutcomes.smallHuntMinorSuccess3HistoryEntry);
+        var smallHuntMajorSuccess1Outcome = new ActionOutcome("majoruccess1", 25, ActionOutcomes.smallHuntMajorSuccess1Exec, ActionOutcomes.smallHuntMajorSuccess1HistoryEntry);
+        var smallHuntMajorSuccess2Outcome = new ActionOutcome("majoruccess2", 25, ActionOutcomes.smallHuntMajorSuccess2Exec, ActionOutcomes.smallHuntMajorSuccess2HistoryEntry);
+        var smallHuntAction = new Action("smallHunt", "Hunt", 3, 3 * 1000, new ResourceRequirement([], []), [smallHuntFailOutcome, smallHuntMinorSuccess1Outcome, smallHuntMinorSuccess2Outcome, smallHuntMinorSuccess3Outcome, smallHuntMajorSuccess1Outcome, smallHuntMajorSuccess2Outcome]);
+        engine.addAction(smallHuntAction);
+        smallHuntAction.isDiscovered = true;
+        smallHuntAction.viewData.isContentOpen = true;
+        //Great hunt
+        var greatHuntOutcome = new ActionOutcome("success", 1, ActionOutcomes.greatHunt, ActionOutcomes.greatHuntHistoryEntry);
+        var greatHuntAction = new Action("greatHunt", "Great Hunt", 6, 30 * 1000, new ResourceRequirement(["wood"], [10]), [greatHuntOutcome]);
+        engine.addAction(greatHuntAction);
+        engine.addRule(GameRules.huntingRule);
+        engine.addRule(GameRules.unlockGrowRule);
+        engine.addRule(GameRules.unlockGreatHuntRule);
+    };
+    DataSource.prototype.popRule = function (stat, engine, delta) {
+        engine.resourcesById("food").editRateModifier("pop", -stat.value * DataSource.foorPerPop / 1000, 0);
+        engine.resourcesById("unemployed").setValue(engine.resourcesById("unemployed").value + delta, engine);
+        engine.resourcesById("food").editCapModifier("pop", stat.value * 10, 0);
+    };
+    //if there are not enough workers some actions must be canceled
+    DataSource.prototype.unemployedRule = function (stat, engine, delta) {
+        if (stat.value < 0) {
+            for (var i = 0; i < engine.actions.length; i++) {
+                if (engine.actions[i].isStarted && engine.actions[i].pop > 0) {
+                    logGame("The recent decrease in the number of available workers has made it impossible to finish " + engine.actions[i].name);
+                    engine.actions[i].cancel(engine);
+                    return;
+                }
+            }
+        }
+    };
+    DataSource.foorPerPop = 0.1;
+    DataSource.canibalicFood = 20;
+    return DataSource;
+})();
 var GameRules = (function () {
     function GameRules() {
     }
@@ -156,117 +367,106 @@ var ActionOutcome = (function () {
     }
     return ActionOutcome;
 })();
-var ActionOutcomes = (function () {
-    function ActionOutcomes() {
+var Engine = (function () {
+    function Engine() {
+        this.timeScale = 1;
+        this.stepScale = 1;
+        this.numericScale = 0;
+        this._time = 0;
+        this._resources = new Array();
+        this._resourcesById = Object();
+        this._actions = new Array();
+        this._actionsById = Object();
+        this._rules = new Array();
+        this.playerData = new PlayerData();
+        this.ruleRemoveQueue = new Array();
     }
-    ActionOutcomes.growFailExec = function (action, outcome, engine) {
-        if (action.lastOutcome == outcome) {
-            logEngine("grow redirected to success because lastOutcome == outcome");
-            return action.outcomeById("success");
-        }
-        if (engine.resourcesById("pop").value > 3) {
-            engine.resourcesById("pop").modify(-1, engine);
-            logGame("Mother has died during the childbirth. No one could feed the child and he died too. <b>Population decreased by 1.</b>");
-        }
-        else {
-            logGame("The child died young.");
-            logEngine("pop on small hunt didn't die because population is too low");
-        }
-        engine.playerData.numberOfGrows++;
-        return null;
+    Object.defineProperty(Engine.prototype, "time", {
+        get: function () {
+            return this._time;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Engine.prototype, "resources", {
+        get: function () {
+            return this._resources;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Engine.prototype.resourcesById = function (id) {
+        return this._resourcesById[id];
     };
-    ActionOutcomes.growSuccessExec = function (action, outcome, engine) {
-        logGame("Family grows. <b>Population increased by 1.</b>");
-        engine.resourcesById("pop").modify(1, engine);
-        engine.playerData.numberOfGrows++;
+    Object.defineProperty(Engine.prototype, "actions", {
+        get: function () {
+            return this._actions;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Engine.prototype.actionsById = function (id) {
+        return this._actionsById[id];
     };
-    ActionOutcomes.smallHuntFailExec = function (action, outcome, engine) {
-        if (action.lastOutcome == outcome) {
-            logEngine("small hunt redirected to success because lastOutcome == outcome");
-            return action.outcomeById("minorSuccess3");
+    Object.defineProperty(Engine.prototype, "rules", {
+        get: function () {
+            return this._rules;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Engine.prototype.update = function (timeDelta) {
+        this._time += timeDelta;
+        this.isUpdateInProgress = true;
+        for (var i = 0; i < this._resources.length; i++) {
+            this._resources[i].updateStart(timeDelta);
         }
-        if (engine.resourcesById("pop").value > 3) {
-            engine.resourcesById("pop").modify(-1, engine);
-            logGame("The hunter became the prey. <b>Population decreased by 1.</b>");
+        for (var i = 0; i < this._actions.length; i++) {
+            if (this._actions[i].isStarted) {
+                this._actions[i].update(timeDelta);
+                if (this._actions[i].isComplete)
+                    this._actions[i].apply(this);
+            }
         }
-        else {
-            logGame("The hunters returned empty-handed.");
-            logEngine("pop on small hunt didn't die because population is too low");
+        for (var i = 0; i < this._rules.length; i++) {
+            this._rules[i].exec(this);
         }
-        engine.playerData.numberOfSmallHunts++;
-        return null;
+        for (var i = 0; i < this._resources.length; i++) {
+            this._resources[i].updateEnd(this);
+        }
+        this.isUpdateInProgress = false;
+        if (this.ruleRemoveQueue.length > 0) {
+            for (var i = 0; i < this.ruleRemoveQueue.length; i++) {
+                this.removeRule(this.ruleRemoveQueue[i], true);
+            }
+            this.ruleRemoveQueue.length = 0;
+        }
     };
-    ActionOutcomes.smallHuntMinorSuccess1Exec = function (action, outcome, engine) {
-        if (engine.resourcesById("pop").value > 3) {
-            logGame("The hunt was a dubious success. <b>Food +20; Wood + 1. Population decreased by 1.</b>");
-            engine.resourcesById("pop").modify(-1, engine);
-        }
-        else {
-            logGame("The hunt was a minor success. <b>Food +20; Wood + 1.</b> The hunters are injured but overall fine.");
-            logEngine("pop on small hunt didn't die because population is too low");
-        }
-        engine.resourcesById("food").modify(20, engine);
-        engine.resourcesById("wood").modify(1, engine);
-        engine.resourcesById("wood").isDiscovered = true;
-        engine.playerData.numberOfSmallHunts++;
+    Engine.prototype.addResource = function (resource) {
+        this._resources.push(resource);
+        this._resourcesById[resource.id] = resource;
     };
-    ActionOutcomes.smallHuntMinorSuccess2Exec = function (action, outcome, engine) {
-        if (engine.resourcesById("pop").value > 3) {
-            logGame("The hunt was a dubious success. <b>Food +30. Population decreased by 1.</b>");
-            engine.resourcesById("pop").modify(-1, engine);
+    Engine.prototype.addAction = function (action) {
+        this._actions.push(action);
+        this._actionsById[action.id] = action;
+    };
+    Engine.prototype.addRule = function (rule) {
+        this._rules.push(rule);
+    };
+    Engine.prototype.removeRule = function (rule, isSilent) {
+        if (isSilent === void 0) { isSilent = false; }
+        if (!isSilent) {
+            logEngine("Removed rule " + rule.id);
         }
-        else {
-            logGame("The hunt was a minor success. <b>Food +30.</b> The hunters are injured but overall fine.");
-            logEngine("pop on small hunt didn't die because population is too low");
+        if (this.isUpdateInProgress) {
+            var indsexOf = this._rules.indexOf(rule);
+            this.ruleRemoveQueue.push(rule);
+            return;
         }
-        engine.resourcesById("food").modify(30, engine);
-        engine.playerData.numberOfSmallHunts++;
+        var indexOf = this._rules.indexOf(rule);
+        this._rules.splice(indexOf, 1);
     };
-    ActionOutcomes.smallHuntMinorSuccess3Exec = function (action, outcome, engine) {
-        if (engine.resourcesById("pop").value > 3) {
-            logGame("The hunt was a dubious success. <b>Food +40. Population decreased by 1.</b>");
-            engine.resourcesById("pop").modify(-1, engine);
-        }
-        else {
-            logGame("The hunt was a minor success. <b>Food +40.</b> The hunters are injured but overall fine.");
-            logEngine("pop on small hunt didn't die because population is too low");
-        }
-        engine.resourcesById("food").modify(40, engine);
-        engine.playerData.numberOfSmallHunts++;
-    };
-    ActionOutcomes.smallHuntMajorSuccess1Exec = function (action, outcome, engine) {
-        logGame("The hunt was a major success! <b>Food +40; Wood +3.</b> And the best thing - everyone returned home uninjured!");
-        engine.resourcesById("food").modify(40, engine);
-        engine.resourcesById("wood").modify(3, engine);
-        engine.resourcesById("wood").isDiscovered = true;
-        engine.playerData.numberOfSmallHunts++;
-    };
-    ActionOutcomes.smallHuntMajorSuccess2Exec = function (action, outcome, engine) {
-        logGame("The hunt was a major success! <b>Food +50; Wood +1.</b> And the best thing - everyone returned home uninjured!");
-        engine.resourcesById("food").modify(50, engine);
-        engine.resourcesById("wood").modify(1, engine);
-        engine.resourcesById("wood").isDiscovered = true;
-        engine.playerData.numberOfSmallHunts++;
-    };
-    ActionOutcomes.greatHunt = function (action, outcome, engine) {
-        logGame("The Great Hunt had almost failed due to coordination issues. " + "Truly unprecedented is the courage and strength it took to combat such large animals. " + "It was most brave of you to take the matters in your own hands and unite the frightened villagers. " + "Songs and ballads would be made about this event. Unfortunately <b >Acoustics</b> and <b>Drama'n'Poetry</b> still aren't researched." + "So for now you will have to settle on the fact that everybody recognizes your contribution in prose.<b> Food + 150; Wood + 25 </b> ");
-        engine.resourcesById("food").modify(150, engine);
-        engine.resourcesById("wood").modify(25, engine);
-        action.isObsolete = true;
-    };
-    //grow
-    ActionOutcomes.growFailHistoryEntry = "Birth complications. Don't ask.";
-    ActionOutcomes.growSuccessHistoryEntry = "The wonder of life has happened in it's full glory.";
-    //small hunt
-    ActionOutcomes.smallHuntFailHistoryEntry = "Total failure.";
-    ActionOutcomes.smallHuntMinorSuccess1HistoryEntry = "Minor success. Hunters sustained injuries. <b>Food +20; Wood + 1.</b>";
-    ActionOutcomes.smallHuntMinorSuccess2HistoryEntry = "Minor success. Hunters sustained injuries. <b>Food +30.</b>";
-    ActionOutcomes.smallHuntMinorSuccess3HistoryEntry = "Minor success. Hunters sustained injuries. <b>Food +40.</b>";
-    ActionOutcomes.smallHuntMajorSuccess1HistoryEntry = "Success! <b>Food +40; Wood +3.</b>";
-    ActionOutcomes.smallHuntMajorSuccess2HistoryEntry = "Success! <b>Food +50; Wood +1.</b>";
-    //great hunt
-    ActionOutcomes.greatHuntHistoryEntry = "You are not supposed to ever read this. Unsee now!";
-    return ActionOutcomes;
+    return Engine;
 })();
 var GameRule = (function () {
     function GameRule(id, exec) {
@@ -275,6 +475,90 @@ var GameRule = (function () {
     }
     return GameRule;
 })();
+var Input = (function () {
+    function Input() {
+    }
+    Input.prototype.load = function (engine) {
+        this.engine = engine;
+    };
+    Input.prototype.timeScaleDown = function () {
+        this.engine.numericScale--;
+        this.updateTimeScales();
+    };
+    Input.prototype.timeScaleNormal = function () {
+        this.engine.numericScale = 0;
+        this.updateTimeScales();
+    };
+    Input.prototype.timeScaleUp = function () {
+        this.engine.numericScale++;
+        this.updateTimeScales();
+    };
+    Input.prototype.timeScaleStop = function () {
+        this.engine.timeScale = 0;
+    };
+    Input.prototype.updateTimeScales = function () {
+        this.engine.timeScale = 1 + this.engine.numericScale / 5;
+        this.engine.stepScale = Math.pow(0.9, this.engine.numericScale);
+    };
+    Input.prototype.activateAction = function (action) {
+        if (action.isAvailable(this.engine))
+            action.start(this.engine);
+    };
+    Input.prototype.cancelAction = function (action) {
+        if (action.isStarted)
+            action.cancel(this.engine);
+    };
+    return Input;
+})();
+var Logger = (function () {
+    function Logger() {
+    }
+    Logger.gameLog = new Array();
+    Logger.engineLog = new Array();
+    return Logger;
+})();
+function logGame(content) {
+    Logger.gameLog.push(content);
+}
+function logEngine(content) {
+    Logger.engineLog.push(content);
+}
+var Logic = (function () {
+    function Logic() {
+    }
+    Logic.prototype.load = function (engine, renderer) {
+        this.engine = engine;
+        this.renderer = renderer;
+    };
+    Logic.prototype.start = function () {
+        var _this = this;
+        this.timeStamp = new Date().getTime();
+        this.isActive = true;
+        setTimeout(function () { return _this.update(); }, Logic.UPDATE_PERIOD);
+    };
+    Logic.prototype.update = function () {
+        var _this = this;
+        if (!this.isActive)
+            return;
+        var newStamp = new Date().getTime();
+        var delta = Math.min(newStamp - this.timeStamp, Logic.UPDATE_PERIOD * 1.5);
+        delta *= this.engine.timeScale / this.engine.stepScale;
+        this.timeStamp = newStamp;
+        this.engine.update(delta);
+        this.renderer.update(delta);
+        setTimeout(function () { return _this.update(); }, Logic.UPDATE_PERIOD * this.engine.stepScale);
+    };
+    Logic.UPDATE_PERIOD = 300;
+    return Logic;
+})();
+var Modifier = (function () {
+    function Modifier(key, add, multi) {
+        this.key = key;
+        this.add = add;
+        this.multi = multi;
+    }
+    return Modifier;
+})();
 var PlayerData = (function () {
     function PlayerData() {
         this.numberOfSmallHunts = 0;
@@ -282,13 +566,164 @@ var PlayerData = (function () {
     }
     return PlayerData;
 })();
+var ResourceRequirement = (function () {
+    function ResourceRequirement(resources, quantaties) {
+        this.resources = resources;
+        this.quantaties = quantaties;
+    }
+    ResourceRequirement.prototype.isMet = function (engine) {
+        for (var i = 0; i < this.resources.length; i++) {
+            if (engine.resourcesById(this.resources[i]).value < this.quantaties[i])
+                return false;
+        }
+        return true;
+    };
+    ResourceRequirement.prototype.subtractFrom = function (engine) {
+        for (var i = 0; i < this.resources.length; i++) {
+            engine.resourcesById(this.resources[i]).modify(-this.quantaties[i], engine);
+        }
+    };
+    ResourceRequirement.prototype.giveBack = function (engine) {
+        for (var i = 0; i < this.resources.length; i++) {
+            engine.resourcesById(this.resources[i]).modify(this.quantaties[i], engine);
+        }
+    };
+    Object.defineProperty(ResourceRequirement.prototype, "isEmpty", {
+        get: function () {
+            return this.resources.length == 0;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    return ResourceRequirement;
+})();
+var Stat = (function () {
+    function Stat(id, name) {
+        this.isDecimal = true;
+        this.hasCap = true;
+        this.id = id;
+        this.name = name;
+        this._value = 0;
+        this._rateCache = 0;
+        this._capCache = 0;
+        this.rateModifiers = new Array();
+        this.capModifiers = new Array();
+    }
+    Stat.prototype.updateStart = function (timeDelta) {
+        this._value += this._rateCache * timeDelta;
+    };
+    Stat.prototype.updateEnd = function (engine) {
+        if (this.hasCap && this._value > this._capCache) {
+            this._value = this._capCache;
+            engine.playerData.limitOnResourcesWasHit = true;
+        }
+        else if (this._value < 0)
+            this._value = 0;
+    };
+    //Insert
+    Stat.prototype.insertRateModifier = function (modifier) {
+        this.rateModifiers.push(modifier);
+        var add = 0;
+        var multi = 0;
+        for (var i = 0; i < this.rateModifiers.length; i++) {
+            add += this.rateModifiers[i].add;
+            multi += this.rateModifiers[i].multi;
+        }
+        this._rateCache = add * (multi + 1);
+    };
+    Stat.prototype.insertCapModifier = function (modifier) {
+        this.capModifiers.push(modifier);
+        var add = 0;
+        var multi = 0;
+        for (var i = 0; i < this.capModifiers.length; i++) {
+            add += this.capModifiers[i].add;
+            multi += this.capModifiers[i].multi;
+        }
+        this._capCache = add * (multi + 1);
+    };
+    //Edit
+    Stat.prototype.editRateModifier = function (key, newAdd, newMulti) {
+        var add = 0;
+        var multi = 0;
+        for (var i = 0; i < this.rateModifiers.length; i++) {
+            if (this.rateModifiers[i].key == key) {
+                this.rateModifiers[i].add = newAdd;
+                this.rateModifiers[i].multi = newMulti;
+            }
+            add += this.rateModifiers[i].add;
+            multi += this.rateModifiers[i].multi;
+        }
+        this._rateCache = add * (multi + 1);
+    };
+    Stat.prototype.editCapModifier = function (key, newAdd, newMulti) {
+        var add = 0;
+        var multi = 0;
+        for (var i = 0; i < this.capModifiers.length; i++) {
+            if (this.capModifiers[i].key == key) {
+                this.capModifiers[i].add = newAdd;
+                this.capModifiers[i].multi = newMulti;
+            }
+            add += this.capModifiers[i].add;
+            multi += this.capModifiers[i].multi;
+        }
+        this._capCache = add * (multi + 1);
+    };
+    Object.defineProperty(Stat.prototype, "value", {
+        get: function () {
+            return this._value;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Stat.prototype, "cap", {
+        get: function () {
+            return this._capCache;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Stat.prototype, "rate", {
+        get: function () {
+            return this._rateCache;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Stat.prototype.setValue = function (value, engine) {
+        if (this._value != value) {
+            var delta = value - this._value;
+            this._value = value;
+            if (this.onValueChanged != null)
+                this.onValueChanged(this, engine, delta);
+        }
+    };
+    Stat.prototype.modify = function (delta, engine) {
+        if (delta != 0) {
+            this._value += delta;
+            if (this.onValueChanged != null)
+                this.onValueChanged(this, engine, delta);
+        }
+    };
+    return Stat;
+})();
+var StatPrototype = (function () {
+    function StatPrototype(id, name, cpsFunction) {
+        this.id = id;
+        this.name = name;
+        this.cpsFunction = cpsFunction;
+    }
+    return StatPrototype;
+})();
 var ActionsRenderer = (function () {
     function ActionsRenderer() {
     }
     ActionsRenderer.prototype.setRoot = function (root) {
         this.root = root;
     };
-    ActionsRenderer.prototype.update = function (timeDelta) {
+    ActionsRenderer.prototype.update = function (timeDelta, visibilityData) {
+        if (visibilityData.visibleTab != VisibilityData.TAB_ACTIONS) {
+            return;
+        }
         for (var i = 0; i < this.engine.actions.length; i++) {
             var isRemoved = false;
             if (this.engine.actions[i].viewData.isRendered && (this.engine.actions[i].isObsolete || !this.engine.actions[i].isDiscovered || !this.engine.actions[i].viewData.isValid(this.engine.actions[i], this.engine))) {
@@ -416,113 +851,15 @@ var ActionViewData = (function () {
     };
     return ActionViewData;
 })();
-window.onload = function () {
-    var el = document.getElementById('content');
-    var binder = new Binder();
-    binder.create(el);
-    binder.start();
-};
-var Binder = (function () {
-    function Binder() {
-    }
-    Binder.prototype.create = function (rootElement) {
-        this.dataSource = new DataSource();
-        this.engine = new Engine();
-        this.renderer = new Renderer();
-        this.input = new Input();
-        this.logic = new Logic();
-        this.input.load(this.engine);
-        this.renderer.load(rootElement, this.engine, this.input);
-        this.logic.load(this.engine, this.renderer);
-        this.dataSource.initEngine(this.engine);
-    };
-    Binder.prototype.start = function () {
-        this.logic.start();
-    };
-    return Binder;
-})();
-var DataSource = (function () {
-    function DataSource() {
-    }
-    DataSource.prototype.initEngine = function (engine) {
-        GameRules.init();
-        var popResource = new Stat("pop", "pop");
-        popResource.insertCapModifier(new Modifier("init", 10, 0));
-        popResource.isDecimal = false;
-        engine.addResource(popResource);
-        popResource.isDiscovered = true;
-        var unemployedResource = new Stat("unemployed", "unemployed");
-        unemployedResource.onValueChanged = this.unemployedRule;
-        unemployedResource.isDecimal = false;
-        unemployedResource.hasCap = false;
-        unemployedResource.isDiscovered = true;
-        engine.addResource(unemployedResource);
-        var foodResource = new Stat("food", "food");
-        foodResource.setValue(15, engine);
-        foodResource.insertCapModifier(new Modifier("init", 20, 0));
-        foodResource.insertCapModifier(new Modifier("pop", 0, 0));
-        foodResource.insertRateModifier(new Modifier("pop", 0, 0));
-        foodResource.isDiscovered = true;
-        engine.addResource(foodResource);
-        popResource.onValueChanged = this.popRule;
-        popResource.setValue(3, engine);
-        engine.addRule(GameRules.foodRule);
-        var woodResource = new Stat("wood", "wood");
-        woodResource.insertCapModifier(new Modifier("init", 50, 0));
-        engine.addResource(woodResource);
-        //Grow
-        var growFailOutcome = new ActionOutcome("fail", 30, ActionOutcomes.growFailExec, ActionOutcomes.growFailHistoryEntry);
-        var growSuccessOutcome = new ActionOutcome("success", 700, ActionOutcomes.growSuccessExec, ActionOutcomes.growSuccessHistoryEntry);
-        var growAction = new Action("grow", "Raise a child", 2, 10 * 1000, new ResourceRequirement(["food"], [10]), [growFailOutcome, growSuccessOutcome]);
-        engine.addAction(growAction);
-        //Small hunt
-        var smallHuntFailOutcome = new ActionOutcome("fail", 10, ActionOutcomes.smallHuntFailExec, ActionOutcomes.smallHuntFailHistoryEntry);
-        var smallHuntMinorSuccess1Outcome = new ActionOutcome("minorSuccess1", 5, ActionOutcomes.smallHuntMinorSuccess1Exec, ActionOutcomes.smallHuntMinorSuccess1HistoryEntry);
-        var smallHuntMinorSuccess2Outcome = new ActionOutcome("minorSuccess2", 10, ActionOutcomes.smallHuntMinorSuccess2Exec, ActionOutcomes.smallHuntMinorSuccess2HistoryEntry);
-        var smallHuntMinorSuccess3Outcome = new ActionOutcome("minorSuccess3", 10, ActionOutcomes.smallHuntMinorSuccess3Exec, ActionOutcomes.smallHuntMinorSuccess3HistoryEntry);
-        var smallHuntMajorSuccess1Outcome = new ActionOutcome("majoruccess1", 25, ActionOutcomes.smallHuntMajorSuccess1Exec, ActionOutcomes.smallHuntMajorSuccess1HistoryEntry);
-        var smallHuntMajorSuccess2Outcome = new ActionOutcome("majoruccess2", 25, ActionOutcomes.smallHuntMajorSuccess2Exec, ActionOutcomes.smallHuntMajorSuccess2HistoryEntry);
-        var smallHuntAction = new Action("smallHunt", "Hunt", 3, 3 * 1000, new ResourceRequirement([], []), [smallHuntFailOutcome, smallHuntMinorSuccess1Outcome, smallHuntMinorSuccess2Outcome, smallHuntMinorSuccess3Outcome, smallHuntMajorSuccess1Outcome, smallHuntMajorSuccess2Outcome]);
-        engine.addAction(smallHuntAction);
-        smallHuntAction.isDiscovered = true;
-        smallHuntAction.viewData.isContentOpen = true;
-        //Great hunt
-        var greatHuntOutcome = new ActionOutcome("success", 1, ActionOutcomes.greatHunt, ActionOutcomes.greatHuntHistoryEntry);
-        var greatHuntAction = new Action("greatHunt", "Great Hunt", 6, 30 * 1000, new ResourceRequirement(["wood"], [10]), [greatHuntOutcome]);
-        engine.addAction(greatHuntAction);
-        engine.addRule(GameRules.huntingRule);
-        engine.addRule(GameRules.unlockGrowRule);
-        engine.addRule(GameRules.unlockGreatHuntRule);
-    };
-    DataSource.prototype.popRule = function (stat, engine, delta) {
-        engine.resourcesById("food").editRateModifier("pop", -stat.value * DataSource.foorPerPop / 1000, 0);
-        engine.resourcesById("unemployed").setValue(engine.resourcesById("unemployed").value + delta, engine);
-        engine.resourcesById("food").editCapModifier("pop", stat.value * 10, 0);
-    };
-    //if there are not enough workers some actions must be canceled
-    DataSource.prototype.unemployedRule = function (stat, engine, delta) {
-        if (stat.value < 0) {
-            for (var i = 0; i < engine.actions.length; i++) {
-                if (engine.actions[i].isStarted && engine.actions[i].pop > 0) {
-                    logGame("The recent decrease in the number of available workers has made it impossible to finish " + engine.actions[i].name);
-                    engine.actions[i].cancel(engine);
-                    return;
-                }
-            }
-        }
-    };
-    DataSource.foorPerPop = 0.1;
-    DataSource.canibalicFood = 20;
-    return DataSource;
-})();
 var DebugRenderer = (function () {
     function DebugRenderer() {
     }
     DebugRenderer.prototype.setRoot = function (root) {
         this.root = root;
     };
-    DebugRenderer.prototype.update = function (timeDelta) {
-        this.root.innerHTML = "Elapsed time: " + this.toTimeString(this.engine.time) + "<br>scale: " + (this.engine.timeScale / this.engine.stepScale).toFixed(1);
+    DebugRenderer.prototype.update = function (timeDelta, visibilityData) {
+        if (visibilityData.visibleTab == VisibilityData.TAB_ACTIONS)
+            this.root.innerHTML = "Elapsed time: " + this.toTimeString(this.engine.time) + "<br>scale: " + (this.engine.timeScale / this.engine.stepScale).toFixed(1);
     };
     DebugRenderer.prototype.load = function (root, engine) {
         this.root = root;
@@ -552,107 +889,6 @@ var DebugRenderer = (function () {
     };
     return DebugRenderer;
 })();
-var Engine = (function () {
-    function Engine() {
-        this.timeScale = 1;
-        this.stepScale = 1;
-        this.numericScale = 0;
-        this._time = 0;
-        this._resources = new Array();
-        this._resourcesById = Object();
-        this._actions = new Array();
-        this._actionsById = Object();
-        this._rules = new Array();
-        this.playerData = new PlayerData();
-        this.ruleRemoveQueue = new Array();
-    }
-    Object.defineProperty(Engine.prototype, "time", {
-        get: function () {
-            return this._time;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Engine.prototype, "resources", {
-        get: function () {
-            return this._resources;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Engine.prototype.resourcesById = function (id) {
-        return this._resourcesById[id];
-    };
-    Object.defineProperty(Engine.prototype, "actions", {
-        get: function () {
-            return this._actions;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Engine.prototype.actionsById = function (id) {
-        return this._actionsById[id];
-    };
-    Object.defineProperty(Engine.prototype, "rules", {
-        get: function () {
-            return this._rules;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Engine.prototype.update = function (timeDelta) {
-        this._time += timeDelta;
-        this.isUpdateInProgress = true;
-        for (var i = 0; i < this._resources.length; i++) {
-            this._resources[i].updateStart(timeDelta);
-        }
-        for (var i = 0; i < this._actions.length; i++) {
-            if (this._actions[i].isStarted) {
-                this._actions[i].update(timeDelta);
-                if (this._actions[i].isComplete)
-                    this._actions[i].apply(this);
-            }
-        }
-        for (var i = 0; i < this._rules.length; i++) {
-            this._rules[i].exec(this);
-        }
-        for (var i = 0; i < this._resources.length; i++) {
-            this._resources[i].updateEnd(this);
-        }
-        this.isUpdateInProgress = false;
-        if (this.ruleRemoveQueue.length > 0) {
-            for (var i = 0; i < this.ruleRemoveQueue.length; i++) {
-                this.removeRule(this.ruleRemoveQueue[i], true);
-            }
-            this.ruleRemoveQueue.length = 0;
-        }
-    };
-    Engine.prototype.addResource = function (resource) {
-        this._resources.push(resource);
-        this._resourcesById[resource.id] = resource;
-    };
-    Engine.prototype.addAction = function (action) {
-        this._actions.push(action);
-        this._actionsById[action.id] = action;
-    };
-    Engine.prototype.addRule = function (rule) {
-        this._rules.push(rule);
-    };
-    Engine.prototype.removeRule = function (rule, isSilent) {
-        if (isSilent === void 0) { isSilent = false; }
-        if (!isSilent) {
-            logEngine("Removed rule " + rule.id);
-        }
-        if (this.isUpdateInProgress) {
-            var indsexOf = this._rules.indexOf(rule);
-            this.ruleRemoveQueue.push(rule);
-            return;
-        }
-        var indexOf = this._rules.indexOf(rule);
-        this._rules.splice(indexOf, 1);
-    };
-    return Engine;
-})();
 var HelperHTML = (function () {
     function HelperHTML() {
     }
@@ -670,82 +906,6 @@ var HelperHTML = (function () {
     };
     return HelperHTML;
 })();
-var Input = (function () {
-    function Input() {
-    }
-    Input.prototype.load = function (engine) {
-        this.engine = engine;
-    };
-    Input.prototype.timeScaleDown = function () {
-        this.engine.numericScale--;
-        this.updateTimeScales();
-    };
-    Input.prototype.timeScaleNormal = function () {
-        this.engine.numericScale = 0;
-        this.updateTimeScales();
-    };
-    Input.prototype.timeScaleUp = function () {
-        this.engine.numericScale++;
-        this.updateTimeScales();
-    };
-    Input.prototype.timeScaleStop = function () {
-        this.engine.timeScale = 0;
-    };
-    Input.prototype.updateTimeScales = function () {
-        this.engine.timeScale = 1 + this.engine.numericScale / 5;
-        this.engine.stepScale = Math.pow(0.9, this.engine.numericScale);
-    };
-    Input.prototype.activateAction = function (action) {
-        if (action.isAvailable(this.engine))
-            action.start(this.engine);
-    };
-    Input.prototype.cancelAction = function (action) {
-        if (action.isStarted)
-            action.cancel(this.engine);
-    };
-    return Input;
-})();
-var Logger = (function () {
-    function Logger() {
-    }
-    Logger.gameLog = new Array();
-    Logger.engineLog = new Array();
-    return Logger;
-})();
-function logGame(content) {
-    Logger.gameLog.push(content);
-}
-function logEngine(content) {
-    Logger.engineLog.push(content);
-}
-var Logic = (function () {
-    function Logic() {
-    }
-    Logic.prototype.load = function (engine, renderer) {
-        this.engine = engine;
-        this.renderer = renderer;
-    };
-    Logic.prototype.start = function () {
-        var _this = this;
-        this.timeStamp = new Date().getTime();
-        this.isActive = true;
-        setTimeout(function () { return _this.update(); }, Logic.UPDATE_PERIOD);
-    };
-    Logic.prototype.update = function () {
-        var _this = this;
-        if (!this.isActive)
-            return;
-        var newStamp = new Date().getTime();
-        var delta = Math.min(newStamp - this.timeStamp, Logic.UPDATE_PERIOD * 1.5);
-        delta *= this.engine.timeScale / this.engine.stepScale;
-        this.timeStamp = newStamp;
-        this.engine.update(delta);
-        this.renderer.update(delta);
-        setTimeout(function () { return _this.update(); }, Logic.UPDATE_PERIOD * this.engine.stepScale);
-    };
-    Logic.UPDATE_PERIOD = 300;
-    return Logic;
-})();
 var LogRenderer = (function () {
     function LogRenderer() {
         this.renderedIndex = -1;
@@ -753,7 +913,7 @@ var LogRenderer = (function () {
     LogRenderer.prototype.setRoot = function (root) {
         this.root = root;
     };
-    LogRenderer.prototype.update = function (timeDelta) {
+    LogRenderer.prototype.update = function (timeDelta, visibilityData) {
         while (this.log.length > this.renderedIndex + 1) {
             this.renderedIndex++;
             this.root.insertBefore(this.logToElement(this.log[this.renderedIndex]), this.root.firstChild);
@@ -767,14 +927,6 @@ var LogRenderer = (function () {
         return HelperHTML.element("div", "gameLogEntry", entry);
     };
     return LogRenderer;
-})();
-var Modifier = (function () {
-    function Modifier(key, add, multi) {
-        this.key = key;
-        this.add = add;
-        this.multi = multi;
-    }
-    return Modifier;
 })();
 var Renderer = (function () {
     function Renderer() {
@@ -794,6 +946,7 @@ var Renderer = (function () {
         this.actionsRenderer.load(root.getElementsByClassName("actionsPanel")[0], engine, input);
         this.gameLogRenderer.load(root.getElementsByClassName("gameLog")[0], Logger.gameLog);
         this.debugLogRenderer.load(root.getElementsByClassName("debugLogPanel")[0], Logger.engineLog);
+        this.visibilityData = new VisibilityData();
         if (input)
             document.onkeydown = function (e) {
                 if (e.keyCode == 97)
@@ -805,13 +958,29 @@ var Renderer = (function () {
                 if (e.keyCode == 96)
                     _this.input.timeScaleStop();
             };
+        this.tabbedElements = [document.getElementById("navActions"), document.getElementById("navSomethingElse")];
+        document.getElementById("navActionsButton").onclick = function () {
+            _this.switchTo("navActions");
+        };
+        document.getElementById("navSomethingElseButton").onclick = function () {
+            _this.switchTo("navSomethingElse");
+        };
+        this.switchTo("navActions");
     };
     Renderer.prototype.update = function (timeDelta) {
-        this.debugRenderer.update(timeDelta);
-        this.resourcesRenderer.update(timeDelta);
-        this.actionsRenderer.update(timeDelta);
-        this.gameLogRenderer.update(timeDelta);
-        this.debugLogRenderer.update(timeDelta);
+        this.debugRenderer.update(timeDelta, this.visibilityData);
+        this.resourcesRenderer.update(timeDelta, this.visibilityData);
+        this.actionsRenderer.update(timeDelta, this.visibilityData);
+        this.gameLogRenderer.update(timeDelta, this.visibilityData);
+        this.debugLogRenderer.update(timeDelta, this.visibilityData);
+    };
+    Renderer.prototype.switchTo = function (elementId) {
+        var element = document.getElementById(elementId);
+        for (var i = 0; i < this.tabbedElements.length; i++) {
+            this.tabbedElements[i].style.display = this.tabbedElements[i] == element ? "block" : "none";
+        }
+        this.visibilityData.visibleTab = elementId;
+        this.update(0);
     };
     return Renderer;
 })();
@@ -877,44 +1046,13 @@ var RenderUtils = (function () {
     RenderUtils.precision = 2;
     return RenderUtils;
 })();
-var ResourceRequirement = (function () {
-    function ResourceRequirement(resources, quantaties) {
-        this.resources = resources;
-        this.quantaties = quantaties;
-    }
-    ResourceRequirement.prototype.isMet = function (engine) {
-        for (var i = 0; i < this.resources.length; i++) {
-            if (engine.resourcesById(this.resources[i]).value < this.quantaties[i])
-                return false;
-        }
-        return true;
-    };
-    ResourceRequirement.prototype.subtractFrom = function (engine) {
-        for (var i = 0; i < this.resources.length; i++) {
-            engine.resourcesById(this.resources[i]).modify(-this.quantaties[i], engine);
-        }
-    };
-    ResourceRequirement.prototype.giveBack = function (engine) {
-        for (var i = 0; i < this.resources.length; i++) {
-            engine.resourcesById(this.resources[i]).modify(this.quantaties[i], engine);
-        }
-    };
-    Object.defineProperty(ResourceRequirement.prototype, "isEmpty", {
-        get: function () {
-            return this.resources.length == 0;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    return ResourceRequirement;
-})();
 var ResourcesRenderer = (function () {
     function ResourcesRenderer() {
     }
     ResourcesRenderer.prototype.setRoot = function (root) {
         this.root = root;
     };
-    ResourcesRenderer.prototype.update = function (timeDelta) {
+    ResourcesRenderer.prototype.update = function (timeDelta, visibilityData) {
         var html = "<table class=\"resourceTable\" cellspacing=\"5\">";
         for (var i = 0; i < this.engine.resources.length; i++) {
             var resource = this.engine.resources[i];
@@ -938,121 +1076,11 @@ var ResourcesRenderer = (function () {
     };
     return ResourcesRenderer;
 })();
-var Stat = (function () {
-    function Stat(id, name) {
-        this.isDecimal = true;
-        this.hasCap = true;
-        this.id = id;
-        this.name = name;
-        this._value = 0;
-        this._rateCache = 0;
-        this._capCache = 0;
-        this.rateModifiers = new Array();
-        this.capModifiers = new Array();
+var VisibilityData = (function () {
+    function VisibilityData() {
     }
-    Stat.prototype.updateStart = function (timeDelta) {
-        this._value += this._rateCache * timeDelta;
-    };
-    Stat.prototype.updateEnd = function (engine) {
-        if (this.hasCap && this._value > this._capCache) {
-            this._value = this._capCache;
-            engine.playerData.limitOnResourcesWasHit = true;
-        }
-        else if (this._value < 0)
-            this._value = 0;
-    };
-    //Insert
-    Stat.prototype.insertRateModifier = function (modifier) {
-        this.rateModifiers.push(modifier);
-        var add = 0;
-        var multi = 0;
-        for (var i = 0; i < this.rateModifiers.length; i++) {
-            add += this.rateModifiers[i].add;
-            multi += this.rateModifiers[i].multi;
-        }
-        this._rateCache = add * (multi + 1);
-    };
-    Stat.prototype.insertCapModifier = function (modifier) {
-        this.capModifiers.push(modifier);
-        var add = 0;
-        var multi = 0;
-        for (var i = 0; i < this.capModifiers.length; i++) {
-            add += this.capModifiers[i].add;
-            multi += this.capModifiers[i].multi;
-        }
-        this._capCache = add * (multi + 1);
-    };
-    //Edit
-    Stat.prototype.editRateModifier = function (key, newAdd, newMulti) {
-        var add = 0;
-        var multi = 0;
-        for (var i = 0; i < this.rateModifiers.length; i++) {
-            if (this.rateModifiers[i].key == key) {
-                this.rateModifiers[i].add = newAdd;
-                this.rateModifiers[i].multi = newMulti;
-            }
-            add += this.rateModifiers[i].add;
-            multi += this.rateModifiers[i].multi;
-        }
-        this._rateCache = add * (multi + 1);
-    };
-    Stat.prototype.editCapModifier = function (key, newAdd, newMulti) {
-        var add = 0;
-        var multi = 0;
-        for (var i = 0; i < this.capModifiers.length; i++) {
-            if (this.capModifiers[i].key == key) {
-                this.capModifiers[i].add = newAdd;
-                this.capModifiers[i].multi = newMulti;
-            }
-            add += this.capModifiers[i].add;
-            multi += this.capModifiers[i].multi;
-        }
-        this._capCache = add * (multi + 1);
-    };
-    Object.defineProperty(Stat.prototype, "value", {
-        get: function () {
-            return this._value;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Stat.prototype, "cap", {
-        get: function () {
-            return this._capCache;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Stat.prototype, "rate", {
-        get: function () {
-            return this._rateCache;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Stat.prototype.setValue = function (value, engine) {
-        if (this._value != value) {
-            var delta = value - this._value;
-            this._value = value;
-            if (this.onValueChanged != null)
-                this.onValueChanged(this, engine, delta);
-        }
-    };
-    Stat.prototype.modify = function (delta, engine) {
-        if (delta != 0) {
-            this._value += delta;
-            if (this.onValueChanged != null)
-                this.onValueChanged(this, engine, delta);
-        }
-    };
-    return Stat;
-})();
-var StatPrototype = (function () {
-    function StatPrototype(id, name, cpsFunction) {
-        this.id = id;
-        this.name = name;
-        this.cpsFunction = cpsFunction;
-    }
-    return StatPrototype;
+    VisibilityData.TAB_ACTIONS = "navActions";
+    VisibilityData.TAB_SOMETHING_ELSE = "navSomethingElse";
+    return VisibilityData;
 })();
 //# sourceMappingURL=ramblingCore.js.map

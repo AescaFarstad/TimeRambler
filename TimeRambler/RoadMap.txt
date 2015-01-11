@@ -48,3 +48,4 @@
 
 benchmark
 time till cap or depletion
+highlight limiting resources in actions

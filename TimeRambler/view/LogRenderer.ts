@@ -11,7 +11,7 @@
         this.root = root;
     }
 
-    public update(timeDelta: number): void {
+    public update(timeDelta: number, visibilityData: VisibilityData): void {
         while (this.log.length > this.renderedIndex + 1) {
             this.renderedIndex++;
             this.root.insertBefore(this.logToElement(this.log[this.renderedIndex]), this.root.firstChild);

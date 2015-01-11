@@ -71,11 +71,11 @@
 }
 
 .actionHeader_Available {
-    background-color: #0b8501;
+    background-color: #34792e;
 }
 
 .actionHeader_Unavailable {
-    background-color: #93372f;
+    background-color: #753a35;
 }
 .actionHeader_Progress {
     background-color: #18316d;
