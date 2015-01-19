@@ -37,4 +37,9 @@
         if (action.isStarted)
             action.cancel(this.engine);
     }
+
+	public onTechClick(tech: Technology): void {
+        if (tech.isAvailable(this.engine))
+            this.engine.finishTech(tech);
+    }
 }  

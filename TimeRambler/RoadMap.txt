@@ -45,7 +45,17 @@
 
 0.011
 	Research
+		only render what is discovered
+		check if new things are discovered
+		render unavailable tech
+		render finished tech
+		hook tech state, changes and updates
+		increase price with each tech discovered
+		decrease price with each neighbour
+		show neighbour hints
 
 benchmark
 time till cap or depletion
 highlight limiting resources in actions
+show how recent is each log entry
+auto-hunting depends on the consumption speed

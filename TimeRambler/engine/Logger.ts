@@ -9,3 +9,7 @@ function logGame(content: string): void {
 function logEngine(content: string): void {
     Logger.engineLog.push(content);
 }
+
+function trace(...args): void {
+	console.log(args.join(" "));
+}

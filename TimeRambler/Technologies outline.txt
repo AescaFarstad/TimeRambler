@@ -1,0 +1,53 @@
+﻿#Stone tools
+	-cave ruler name, point for next era
+		-hut +maxPop
+			[-barn storage of food]
+		animal assault random event - proportional to number of people
+		-palisade vs.animals decreases chance
+	#Skinning
+		get furs, skins, bone from hunts
+	#Stone and bone weapons
+		less chance to die during hunting
+		more food from hunting
+		#Wood carving point for next era
+			cheaper buildings
+			J woodcutter +0.5 wood/sec
+
+#Gathering
+	J gatherer +0.1wood/sec + 0.5 food/sec inf
+	#Hearbology
+		gatherer gets +0.01 herbs/sec
+		#Spiritual medicine
+			[J hunter +0.3 food/sec +furs,bones,skins]
+			less chance to die during birth and hunting. Consumes herbs.
+	#Salting
+		more storage per person
+		[-barn storage of food]
+	#Agriculture
+		-farm +max farmers point for next era
+		J farmer +0.8 food/sec
+		
+#Language
+	less chance to die during birth
+	increase in research
+	research cap increse
+	#Social hierarchy
+		-point for next era
+		specialists do a small amount of research
+	#Specialization	
+		increase in research
+		[J hunter +0.3 food/sec +furs,bones,skins]
+
+
+#Taming Fire
+	less chance to die during hunting. point for next era
+	-bonfire happiness boost
+	#Mining
+		J miner +0.1 stone/sec
+		#Mansory
+			J stone cutter +0.1 stone block/sec - 1 stone/sec
+		#Pottery
+			storage increase
+		#Irrigation
+			-canal farmer food increase
+			point for next era

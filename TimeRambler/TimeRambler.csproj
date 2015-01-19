@@ -10,7 +10,7 @@
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <DebugType>full</DebugType>
     <DebugSymbols>true</DebugSymbols>
-    <TypeScriptToolsVersion>1.1</TypeScriptToolsVersion>
+    <TypeScriptToolsVersion>1.4</TypeScriptToolsVersion>
     <UseIISExpress>true</UseIISExpress>
     <IISExpressSSLPort />
     <IISExpressAnonymousAuthentication />
@@ -22,15 +22,20 @@
     <Content Include="Guide.txt" />
     <Content Include="index.html" />
     <Content Include="RoadMap.txt" />
+    <Content Include="Technologies outline.txt" />
     <Content Include="web.config" />
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="dataSource\GameRules.ts" />
+    <TypeScriptCompile Include="dataSource\Technologies.ts" />
     <TypeScriptCompile Include="engine\Action.ts" />
     <TypeScriptCompile Include="engine\ActionOutcome.ts" />
     <TypeScriptCompile Include="dataSource\ActionOutcomes.ts" />
     <TypeScriptCompile Include="engine\GameRule.ts" />
     <TypeScriptCompile Include="engine\PlayerData.ts" />
+    <TypeScriptCompile Include="engine\Technology.ts" />
+    <TypeScriptCompile Include="Hacks.ts" />
+    <TypeScriptCompile Include="IPoint.ts" />
     <TypeScriptCompile Include="view\ActionsRenderer.ts" />
     <TypeScriptCompile Include="view\ActionViewData.ts" />
     <TypeScriptCompile Include="app.ts" />
@@ -43,6 +48,7 @@
     <TypeScriptCompile Include="engine\Input.ts" />
     <TypeScriptCompile Include="engine\Logger.ts" />
     <TypeScriptCompile Include="engine\Logic.ts" />
+    <TypeScriptCompile Include="view\HexGrid.ts" />
     <TypeScriptCompile Include="view\LogRenderer.ts" />
     <TypeScriptCompile Include="engine\Modifier.ts" />
     <TypeScriptCompile Include="view\Renderer.ts" />
@@ -51,6 +57,8 @@
     <TypeScriptCompile Include="view\ResourcesRenderer.ts" />
     <TypeScriptCompile Include="engine\Stat.ts" />
     <TypeScriptCompile Include="engine\StatPrototype.ts" />
+    <TypeScriptCompile Include="view\TechRenderer.ts" />
+    <TypeScriptCompile Include="view\TechViewData.ts" />
     <TypeScriptCompile Include="view\VisibilityData.ts" />
   </ItemGroup>
   <ItemGroup>

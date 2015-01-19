@@ -158,7 +158,72 @@
     color: #fcffaa;
 }
 
+.baseTooltipable{
+    position:relative;
+}
 
-.tooltipTable {
-    
+.baseTooltipable div.baseTooltip{
+    position: absolute;
+    left: 302px;
+    top: 0;
+    z-index: 99;
+    display:none;
+}
+
+.baseTooltipable:hover div.baseTooltip{
+    position:absolute;
+    z-index: 99;
+    margin-left: 0;
+    display:block;
+}
+
+
+
+/* Technology=========================================================================================================================================
+======================================================================================================================================================*/
+
+.researchUI {
+    text-align: center; 
+    position: absolute;   
+}
+
+.techHeader {
+    position:relative;
+    text-align: center; 
+    color:#fcffaa;
+    font-size:larger;
+    font-weight:bold;
+}
+
+.techDescContainer {
+    color:white;
+    position:absolute;
+    width:350px;
+    z-index:99;
+}
+
+.techDesc {
+    padding:10px;
+    background:#716a4a;
+    position:relative;
+    top:50%;
+    -webkit-transform: translateY(-50%);
+    -ms-transform: translateY(-50%);
+    -moz-transform: translateY(-50%);
+    -o-transform: translateY(-50%);
+    transform: translateY(-50%);
+}
+
+.techResearch {
+    font-weight:bold;   
+}
+
+.reseqrchReqList {
+    list-style-type: none;
+    padding:0px; 
+}
+
+.reseqrchReqListItem {
+    position:relative;
+    text-align: center;    
 }

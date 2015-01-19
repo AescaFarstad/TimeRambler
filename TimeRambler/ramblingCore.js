@@ -1,214 +1,3 @@
-window.onload = function () {
-    var el = document.getElementById('content');
-    var binder = new Binder();
-    binder.create(el);
-    binder.start();
-};
-var Binder = (function () {
-    function Binder() {
-    }
-    Binder.prototype.create = function (rootElement) {
-        this.dataSource = new DataSource();
-        this.engine = new Engine();
-        this.renderer = new Renderer();
-        this.input = new Input();
-        this.logic = new Logic();
-        this.input.load(this.engine);
-        this.renderer.load(rootElement, this.engine, this.input);
-        this.logic.load(this.engine, this.renderer);
-        this.dataSource.initEngine(this.engine);
-    };
-    Binder.prototype.start = function () {
-        this.logic.start();
-    };
-    return Binder;
-})();
-var ActionOutcomes = (function () {
-    function ActionOutcomes() {
-    }
-    ActionOutcomes.growFailExec = function (action, outcome, engine) {
-        if (action.lastOutcome == outcome) {
-            logEngine("grow redirected to success because lastOutcome == outcome");
-            return action.outcomeById("success");
-        }
-        if (engine.resourcesById("pop").value > 3) {
-            engine.resourcesById("pop").modify(-1, engine);
-            logGame("Mother has died during the childbirth. No one could feed the child and he died too. <b>Population decreased by 1.</b>");
-        }
-        else {
-            logGame("The child died young.");
-            logEngine("pop on small hunt didn't die because population is too low");
-        }
-        engine.playerData.numberOfGrows++;
-        return null;
-    };
-    ActionOutcomes.growSuccessExec = function (action, outcome, engine) {
-        logGame("Family grows. <b>Population increased by 1.</b>");
-        engine.resourcesById("pop").modify(1, engine);
-        engine.playerData.numberOfGrows++;
-    };
-    ActionOutcomes.smallHuntFailExec = function (action, outcome, engine) {
-        if (action.lastOutcome == outcome) {
-            logEngine("small hunt redirected to success because lastOutcome == outcome");
-            return action.outcomeById("minorSuccess3");
-        }
-        if (engine.resourcesById("pop").value > 3) {
-            engine.resourcesById("pop").modify(-1, engine);
-            logGame("The hunter became the prey. <b>Population decreased by 1.</b>");
-        }
-        else {
-            logGame("The hunters returned empty-handed.");
-            logEngine("pop on small hunt didn't die because population is too low");
-        }
-        engine.playerData.numberOfSmallHunts++;
-        return null;
-    };
-    ActionOutcomes.smallHuntMinorSuccess1Exec = function (action, outcome, engine) {
-        if (engine.resourcesById("pop").value > 3) {
-            logGame("The hunt was a dubious success. <b>Food +20; Wood + 1. Population decreased by 1.</b>");
-            engine.resourcesById("pop").modify(-1, engine);
-        }
-        else {
-            logGame("The hunt was a minor success. <b>Food +20; Wood + 1.</b> The hunters are injured but overall fine.");
-            logEngine("pop on small hunt didn't die because population is too low");
-        }
-        engine.resourcesById("food").modify(20, engine);
-        engine.resourcesById("wood").modify(1, engine);
-        engine.resourcesById("wood").isDiscovered = true;
-        engine.playerData.numberOfSmallHunts++;
-    };
-    ActionOutcomes.smallHuntMinorSuccess2Exec = function (action, outcome, engine) {
-        if (engine.resourcesById("pop").value > 3) {
-            logGame("The hunt was a dubious success. <b>Food +30. Population decreased by 1.</b>");
-            engine.resourcesById("pop").modify(-1, engine);
-        }
-        else {
-            logGame("The hunt was a minor success. <b>Food +30.</b> The hunters are injured but overall fine.");
-            logEngine("pop on small hunt didn't die because population is too low");
-        }
-        engine.resourcesById("food").modify(30, engine);
-        engine.playerData.numberOfSmallHunts++;
-    };
-    ActionOutcomes.smallHuntMinorSuccess3Exec = function (action, outcome, engine) {
-        if (engine.resourcesById("pop").value > 3) {
-            logGame("The hunt was a dubious success. <b>Food +40. Population decreased by 1.</b>");
-            engine.resourcesById("pop").modify(-1, engine);
-        }
-        else {
-            logGame("The hunt was a minor success. <b>Food +40.</b> The hunters are injured but overall fine.");
-            logEngine("pop on small hunt didn't die because population is too low");
-        }
-        engine.resourcesById("food").modify(40, engine);
-        engine.playerData.numberOfSmallHunts++;
-    };
-    ActionOutcomes.smallHuntMajorSuccess1Exec = function (action, outcome, engine) {
-        logGame("The hunt was a major success! <b>Food +40; Wood +3.</b> And the best thing - everyone returned home uninjured!");
-        engine.resourcesById("food").modify(40, engine);
-        engine.resourcesById("wood").modify(3, engine);
-        engine.resourcesById("wood").isDiscovered = true;
-        engine.playerData.numberOfSmallHunts++;
-    };
-    ActionOutcomes.smallHuntMajorSuccess2Exec = function (action, outcome, engine) {
-        logGame("The hunt was a major success! <b>Food +50; Wood +1.</b> And the best thing - everyone returned home uninjured!");
-        engine.resourcesById("food").modify(50, engine);
-        engine.resourcesById("wood").modify(1, engine);
-        engine.resourcesById("wood").isDiscovered = true;
-        engine.playerData.numberOfSmallHunts++;
-    };
-    ActionOutcomes.greatHunt = function (action, outcome, engine) {
-        logGame("The Great Hunt had almost failed due to coordination issues. " + "Truly unprecedented is the courage and strength it took to combat such large animals. " + "It was most brave of you to take the matters in your own hands and unite the frightened villagers. " + "Songs and ballads would be made about this event. Unfortunately <b >Acoustics</b> and <b>Drama'n'Poetry</b> still aren't researched." + "So for now you will have to settle on the fact that everybody recognizes your contribution in prose.<b> Food + 150; Wood + 25 </b> ");
-        engine.resourcesById("food").modify(150, engine);
-        engine.resourcesById("wood").modify(25, engine);
-        action.isObsolete = true;
-    };
-    //grow
-    ActionOutcomes.growFailHistoryEntry = "Birth complications. Don't ask.";
-    ActionOutcomes.growSuccessHistoryEntry = "The wonder of life has happened in it's full glory.";
-    //small hunt
-    ActionOutcomes.smallHuntFailHistoryEntry = "Total failure.";
-    ActionOutcomes.smallHuntMinorSuccess1HistoryEntry = "Minor success. Hunters sustained injuries. <b>Food +20; Wood + 1.</b>";
-    ActionOutcomes.smallHuntMinorSuccess2HistoryEntry = "Minor success. Hunters sustained injuries. <b>Food +30.</b>";
-    ActionOutcomes.smallHuntMinorSuccess3HistoryEntry = "Minor success. Hunters sustained injuries. <b>Food +40.</b>";
-    ActionOutcomes.smallHuntMajorSuccess1HistoryEntry = "Success! <b>Food +40; Wood +3.</b>";
-    ActionOutcomes.smallHuntMajorSuccess2HistoryEntry = "Success! <b>Food +50; Wood +1.</b>";
-    //great hunt
-    ActionOutcomes.greatHuntHistoryEntry = "You are not supposed to ever read this. Unsee now!";
-    return ActionOutcomes;
-})();
-var DataSource = (function () {
-    function DataSource() {
-    }
-    DataSource.prototype.initEngine = function (engine) {
-        GameRules.init();
-        var popResource = new Stat("pop", "pop");
-        popResource.insertCapModifier(new Modifier("init", 10, 0));
-        popResource.isDecimal = false;
-        engine.addResource(popResource);
-        popResource.isDiscovered = true;
-        var unemployedResource = new Stat("unemployed", "unemployed");
-        unemployedResource.onValueChanged = this.unemployedRule;
-        unemployedResource.isDecimal = false;
-        unemployedResource.hasCap = false;
-        unemployedResource.isDiscovered = true;
-        engine.addResource(unemployedResource);
-        var foodResource = new Stat("food", "food");
-        foodResource.setValue(15, engine);
-        foodResource.insertCapModifier(new Modifier("init", 20, 0));
-        foodResource.insertCapModifier(new Modifier("pop", 0, 0));
-        foodResource.insertRateModifier(new Modifier("pop", 0, 0));
-        foodResource.isDiscovered = true;
-        engine.addResource(foodResource);
-        popResource.onValueChanged = this.popRule;
-        popResource.setValue(3, engine);
-        engine.addRule(GameRules.foodRule);
-        var woodResource = new Stat("wood", "wood");
-        woodResource.insertCapModifier(new Modifier("init", 50, 0));
-        engine.addResource(woodResource);
-        //Grow
-        var growFailOutcome = new ActionOutcome("fail", 30, ActionOutcomes.growFailExec, ActionOutcomes.growFailHistoryEntry);
-        var growSuccessOutcome = new ActionOutcome("success", 90, ActionOutcomes.growSuccessExec, ActionOutcomes.growSuccessHistoryEntry);
-        var growAction = new Action("grow", "Raise a child", 2, 10 * 1000, new ResourceRequirement(["food"], [10]), [growFailOutcome, growSuccessOutcome]);
-        engine.addAction(growAction);
-        //Small hunt
-        var smallHuntFailOutcome = new ActionOutcome("fail", 10, ActionOutcomes.smallHuntFailExec, ActionOutcomes.smallHuntFailHistoryEntry);
-        var smallHuntMinorSuccess1Outcome = new ActionOutcome("minorSuccess1", 5, ActionOutcomes.smallHuntMinorSuccess1Exec, ActionOutcomes.smallHuntMinorSuccess1HistoryEntry);
-        var smallHuntMinorSuccess2Outcome = new ActionOutcome("minorSuccess2", 10, ActionOutcomes.smallHuntMinorSuccess2Exec, ActionOutcomes.smallHuntMinorSuccess2HistoryEntry);
-        var smallHuntMinorSuccess3Outcome = new ActionOutcome("minorSuccess3", 10, ActionOutcomes.smallHuntMinorSuccess3Exec, ActionOutcomes.smallHuntMinorSuccess3HistoryEntry);
-        var smallHuntMajorSuccess1Outcome = new ActionOutcome("majoruccess1", 25, ActionOutcomes.smallHuntMajorSuccess1Exec, ActionOutcomes.smallHuntMajorSuccess1HistoryEntry);
-        var smallHuntMajorSuccess2Outcome = new ActionOutcome("majoruccess2", 25, ActionOutcomes.smallHuntMajorSuccess2Exec, ActionOutcomes.smallHuntMajorSuccess2HistoryEntry);
-        var smallHuntAction = new Action("smallHunt", "Hunt", 3, 3 * 1000, new ResourceRequirement([], []), [smallHuntFailOutcome, smallHuntMinorSuccess1Outcome, smallHuntMinorSuccess2Outcome, smallHuntMinorSuccess3Outcome, smallHuntMajorSuccess1Outcome, smallHuntMajorSuccess2Outcome]);
-        engine.addAction(smallHuntAction);
-        smallHuntAction.isDiscovered = true;
-        smallHuntAction.viewData.isContentOpen = true;
-        //Great hunt
-        var greatHuntOutcome = new ActionOutcome("success", 1, ActionOutcomes.greatHunt, ActionOutcomes.greatHuntHistoryEntry);
-        var greatHuntAction = new Action("greatHunt", "Great Hunt", 6, 30 * 1000, new ResourceRequirement(["wood"], [10]), [greatHuntOutcome]);
-        engine.addAction(greatHuntAction);
-        engine.addRule(GameRules.huntingRule);
-        engine.addRule(GameRules.unlockGrowRule);
-        engine.addRule(GameRules.unlockGreatHuntRule);
-    };
-    DataSource.prototype.popRule = function (stat, engine, delta) {
-        engine.resourcesById("food").editRateModifier("pop", -stat.value * DataSource.foorPerPop / 1000, 0);
-        engine.resourcesById("unemployed").setValue(engine.resourcesById("unemployed").value + delta, engine);
-        engine.resourcesById("food").editCapModifier("pop", stat.value * 10, 0);
-    };
-    //if there are not enough workers some actions must be canceled
-    DataSource.prototype.unemployedRule = function (stat, engine, delta) {
-        if (stat.value < 0) {
-            for (var i = 0; i < engine.actions.length; i++) {
-                if (engine.actions[i].isStarted && engine.actions[i].pop > 0) {
-                    logGame("The recent decrease in the number of available workers has made it impossible to finish " + engine.actions[i].name);
-                    engine.actions[i].cancel(engine);
-                    return;
-                }
-            }
-        }
-    };
-    DataSource.foorPerPop = 0.1;
-    DataSource.canibalicFood = 20;
-    return DataSource;
-})();
 var GameRules = (function () {
     function GameRules() {
     }
@@ -252,6 +41,16 @@ var GameRules = (function () {
         }
     };
     return GameRules;
+})();
+var Technologies = (function () {
+    function Technologies() {
+    }
+    Technologies.stoneToolsExec = function (technology, engine) {
+        logGame("discovered <b>" + technology.name + "</b>");
+    };
+    //stoneTools
+    Technologies.stoneToolsDescription = "Birth complications. Don't ask.";
+    return Technologies;
 })();
 var Action = (function () {
     function Action(id, name, pop, time, resources, outcomes) {
@@ -367,106 +166,117 @@ var ActionOutcome = (function () {
     }
     return ActionOutcome;
 })();
-var Engine = (function () {
-    function Engine() {
-        this.timeScale = 1;
-        this.stepScale = 1;
-        this.numericScale = 0;
-        this._time = 0;
-        this._resources = new Array();
-        this._resourcesById = Object();
-        this._actions = new Array();
-        this._actionsById = Object();
-        this._rules = new Array();
-        this.playerData = new PlayerData();
-        this.ruleRemoveQueue = new Array();
+var ActionOutcomes = (function () {
+    function ActionOutcomes() {
     }
-    Object.defineProperty(Engine.prototype, "time", {
-        get: function () {
-            return this._time;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Engine.prototype, "resources", {
-        get: function () {
-            return this._resources;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Engine.prototype.resourcesById = function (id) {
-        return this._resourcesById[id];
-    };
-    Object.defineProperty(Engine.prototype, "actions", {
-        get: function () {
-            return this._actions;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Engine.prototype.actionsById = function (id) {
-        return this._actionsById[id];
-    };
-    Object.defineProperty(Engine.prototype, "rules", {
-        get: function () {
-            return this._rules;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Engine.prototype.update = function (timeDelta) {
-        this._time += timeDelta;
-        this.isUpdateInProgress = true;
-        for (var i = 0; i < this._resources.length; i++) {
-            this._resources[i].updateStart(timeDelta);
+    ActionOutcomes.growFailExec = function (action, outcome, engine) {
+        if (action.lastOutcome == outcome) {
+            logEngine("grow redirected to success because lastOutcome == outcome");
+            return action.outcomeById("success");
         }
-        for (var i = 0; i < this._actions.length; i++) {
-            if (this._actions[i].isStarted) {
-                this._actions[i].update(timeDelta);
-                if (this._actions[i].isComplete)
-                    this._actions[i].apply(this);
-            }
+        if (engine.resourcesById("pop").value > 3) {
+            engine.resourcesById("pop").modify(-1, engine);
+            logGame("Mother has died during the childbirth. No one could feed the child and he died too. <b>Population decreased by 1.</b>");
         }
-        for (var i = 0; i < this._rules.length; i++) {
-            this._rules[i].exec(this);
+        else {
+            logGame("The child died young.");
+            logEngine("pop on small hunt didn't die because population is too low");
         }
-        for (var i = 0; i < this._resources.length; i++) {
-            this._resources[i].updateEnd(this);
-        }
-        this.isUpdateInProgress = false;
-        if (this.ruleRemoveQueue.length > 0) {
-            for (var i = 0; i < this.ruleRemoveQueue.length; i++) {
-                this.removeRule(this.ruleRemoveQueue[i], true);
-            }
-            this.ruleRemoveQueue.length = 0;
-        }
+        engine.playerData.numberOfGrows++;
+        return null;
     };
-    Engine.prototype.addResource = function (resource) {
-        this._resources.push(resource);
-        this._resourcesById[resource.id] = resource;
+    ActionOutcomes.growSuccessExec = function (action, outcome, engine) {
+        logGame("Family grows. <b>Population increased by 1.</b>");
+        engine.resourcesById("pop").modify(1, engine);
+        engine.playerData.numberOfGrows++;
     };
-    Engine.prototype.addAction = function (action) {
-        this._actions.push(action);
-        this._actionsById[action.id] = action;
-    };
-    Engine.prototype.addRule = function (rule) {
-        this._rules.push(rule);
-    };
-    Engine.prototype.removeRule = function (rule, isSilent) {
-        if (isSilent === void 0) { isSilent = false; }
-        if (!isSilent) {
-            logEngine("Removed rule " + rule.id);
+    ActionOutcomes.smallHuntFailExec = function (action, outcome, engine) {
+        if (action.lastOutcome == outcome) {
+            logEngine("small hunt redirected to success because lastOutcome == outcome");
+            return action.outcomeById("minorSuccess3");
         }
-        if (this.isUpdateInProgress) {
-            var indsexOf = this._rules.indexOf(rule);
-            this.ruleRemoveQueue.push(rule);
-            return;
+        if (engine.resourcesById("pop").value > 3) {
+            engine.resourcesById("pop").modify(-1, engine);
+            logGame("The hunter became the prey. <b>Population decreased by 1.</b>");
         }
-        var indexOf = this._rules.indexOf(rule);
-        this._rules.splice(indexOf, 1);
+        else {
+            logGame("The hunters returned empty-handed.");
+            logEngine("pop on small hunt didn't die because population is too low");
+        }
+        engine.playerData.numberOfSmallHunts++;
+        return null;
     };
-    return Engine;
+    ActionOutcomes.smallHuntMinorSuccess1Exec = function (action, outcome, engine) {
+        if (engine.resourcesById("pop").value > 3) {
+            logGame("The hunt was a dubious success. <b>Food +20; Wood + 1. Population decreased by 1.</b>");
+            engine.resourcesById("pop").modify(-1, engine);
+        }
+        else {
+            logGame("The hunt was a minor success. <b>Food +20; Wood + 1.</b> The hunters are injured but overall fine.");
+            logEngine("pop on small hunt didn't die because population is too low");
+        }
+        engine.resourcesById("food").modify(20, engine);
+        engine.resourcesById("wood").modify(1, engine);
+        engine.resourcesById("wood").isDiscovered = true;
+        engine.playerData.numberOfSmallHunts++;
+    };
+    ActionOutcomes.smallHuntMinorSuccess2Exec = function (action, outcome, engine) {
+        if (engine.resourcesById("pop").value > 3) {
+            logGame("The hunt was a dubious success. <b>Food +30. Population decreased by 1.</b>");
+            engine.resourcesById("pop").modify(-1, engine);
+        }
+        else {
+            logGame("The hunt was a minor success. <b>Food +30.</b> The hunters are injured but overall fine.");
+            logEngine("pop on small hunt didn't die because population is too low");
+        }
+        engine.resourcesById("food").modify(30, engine);
+        engine.playerData.numberOfSmallHunts++;
+    };
+    ActionOutcomes.smallHuntMinorSuccess3Exec = function (action, outcome, engine) {
+        if (engine.resourcesById("pop").value > 3) {
+            logGame("The hunt was a dubious success. <b>Food +40. Population decreased by 1.</b>");
+            engine.resourcesById("pop").modify(-1, engine);
+        }
+        else {
+            logGame("The hunt was a minor success. <b>Food +40.</b> The hunters are injured but overall fine.");
+            logEngine("pop on small hunt didn't die because population is too low");
+        }
+        engine.resourcesById("food").modify(40, engine);
+        engine.playerData.numberOfSmallHunts++;
+    };
+    ActionOutcomes.smallHuntMajorSuccess1Exec = function (action, outcome, engine) {
+        logGame("The hunt was a major success! <b>Food +40; Wood +3.</b> And the best thing - everyone returned home uninjured!");
+        engine.resourcesById("food").modify(40, engine);
+        engine.resourcesById("wood").modify(3, engine);
+        engine.resourcesById("wood").isDiscovered = true;
+        engine.playerData.numberOfSmallHunts++;
+    };
+    ActionOutcomes.smallHuntMajorSuccess2Exec = function (action, outcome, engine) {
+        logGame("The hunt was a major success! <b>Food +50; Wood +1.</b> And the best thing - everyone returned home uninjured!");
+        engine.resourcesById("food").modify(50, engine);
+        engine.resourcesById("wood").modify(1, engine);
+        engine.resourcesById("wood").isDiscovered = true;
+        engine.playerData.numberOfSmallHunts++;
+    };
+    ActionOutcomes.greatHunt = function (action, outcome, engine) {
+        logGame("The Great Hunt had almost failed due to coordination issues. " + "Truly unprecedented is the courage and strength it took to combat such large animals. " + "It was most brave of you to take the matters in your own hands and unite the frightened villagers. " + "Songs and ballads would be made about this event. Unfortunately <b >Acoustics</b> and <b>Drama'n'Poetry</b> still aren't researched." + "So for now you will have to settle on the fact that everybody recognizes your contribution in prose.<b> Food + 150; Wood + 25 </b> ");
+        engine.resourcesById("food").modify(150, engine);
+        engine.resourcesById("wood").modify(25, engine);
+        action.isObsolete = true;
+    };
+    //grow
+    ActionOutcomes.growFailHistoryEntry = "Birth complications. Don't ask.";
+    ActionOutcomes.growSuccessHistoryEntry = "The wonder of life has happened in it's full glory.";
+    //small hunt
+    ActionOutcomes.smallHuntFailHistoryEntry = "Total failure.";
+    ActionOutcomes.smallHuntMinorSuccess1HistoryEntry = "Minor success. Hunters sustained injuries. <b>Food +20; Wood + 1.</b>";
+    ActionOutcomes.smallHuntMinorSuccess2HistoryEntry = "Minor success. Hunters sustained injuries. <b>Food +30.</b>";
+    ActionOutcomes.smallHuntMinorSuccess3HistoryEntry = "Minor success. Hunters sustained injuries. <b>Food +40.</b>";
+    ActionOutcomes.smallHuntMajorSuccess1HistoryEntry = "Success! <b>Food +40; Wood +3.</b>";
+    ActionOutcomes.smallHuntMajorSuccess2HistoryEntry = "Success! <b>Food +50; Wood +1.</b>";
+    //great hunt
+    ActionOutcomes.greatHuntHistoryEntry = "You are not supposed to ever read this. Unsee now!";
+    return ActionOutcomes;
 })();
 var GameRule = (function () {
     function GameRule(id, exec) {
@@ -475,90 +285,6 @@ var GameRule = (function () {
     }
     return GameRule;
 })();
-var Input = (function () {
-    function Input() {
-    }
-    Input.prototype.load = function (engine) {
-        this.engine = engine;
-    };
-    Input.prototype.timeScaleDown = function () {
-        this.engine.numericScale--;
-        this.updateTimeScales();
-    };
-    Input.prototype.timeScaleNormal = function () {
-        this.engine.numericScale = 0;
-        this.updateTimeScales();
-    };
-    Input.prototype.timeScaleUp = function () {
-        this.engine.numericScale++;
-        this.updateTimeScales();
-    };
-    Input.prototype.timeScaleStop = function () {
-        this.engine.timeScale = 0;
-    };
-    Input.prototype.updateTimeScales = function () {
-        this.engine.timeScale = 1 + this.engine.numericScale / 5;
-        this.engine.stepScale = Math.pow(0.9, this.engine.numericScale);
-    };
-    Input.prototype.activateAction = function (action) {
-        if (action.isAvailable(this.engine))
-            action.start(this.engine);
-    };
-    Input.prototype.cancelAction = function (action) {
-        if (action.isStarted)
-            action.cancel(this.engine);
-    };
-    return Input;
-})();
-var Logger = (function () {
-    function Logger() {
-    }
-    Logger.gameLog = new Array();
-    Logger.engineLog = new Array();
-    return Logger;
-})();
-function logGame(content) {
-    Logger.gameLog.push(content);
-}
-function logEngine(content) {
-    Logger.engineLog.push(content);
-}
-var Logic = (function () {
-    function Logic() {
-    }
-    Logic.prototype.load = function (engine, renderer) {
-        this.engine = engine;
-        this.renderer = renderer;
-    };
-    Logic.prototype.start = function () {
-        var _this = this;
-        this.timeStamp = new Date().getTime();
-        this.isActive = true;
-        setTimeout(function () { return _this.update(); }, Logic.UPDATE_PERIOD);
-    };
-    Logic.prototype.update = function () {
-        var _this = this;
-        if (!this.isActive)
-            return;
-        var newStamp = new Date().getTime();
-        var delta = Math.min(newStamp - this.timeStamp, Logic.UPDATE_PERIOD * 1.5);
-        delta *= this.engine.timeScale / this.engine.stepScale;
-        this.timeStamp = newStamp;
-        this.engine.update(delta);
-        this.renderer.update(delta);
-        setTimeout(function () { return _this.update(); }, Logic.UPDATE_PERIOD * this.engine.stepScale);
-    };
-    Logic.UPDATE_PERIOD = 300;
-    return Logic;
-})();
-var Modifier = (function () {
-    function Modifier(key, add, multi) {
-        this.key = key;
-        this.add = add;
-        this.multi = multi;
-    }
-    return Modifier;
-})();
 var PlayerData = (function () {
     function PlayerData() {
         this.numberOfSmallHunts = 0;
@@ -566,153 +292,39 @@ var PlayerData = (function () {
     }
     return PlayerData;
 })();
-var ResourceRequirement = (function () {
-    function ResourceRequirement(resources, quantaties) {
+var Technology = (function () {
+    function Technology(id, name, x, y, exec, researchCost, resources) {
+        this.viewData = new TechViewData();
+        this.id = id;
+        this.name = name;
+        this.x = x;
+        this.y = y;
+        this.exec = exec;
+        this.researchCost = researchCost;
         this.resources = resources;
-        this.quantaties = quantaties;
     }
-    ResourceRequirement.prototype.isMet = function (engine) {
-        for (var i = 0; i < this.resources.length; i++) {
-            if (engine.resourcesById(this.resources[i]).value < this.quantaties[i])
-                return false;
-        }
-        return true;
+    Technology.prototype.isAvailable = function (engine) {
+        return true && this.resources.isMet(engine) && this.isDiscovered && !this.isFinished;
     };
-    ResourceRequirement.prototype.subtractFrom = function (engine) {
-        for (var i = 0; i < this.resources.length; i++) {
-            engine.resourcesById(this.resources[i]).modify(-this.quantaties[i], engine);
-        }
-    };
-    ResourceRequirement.prototype.giveBack = function (engine) {
-        for (var i = 0; i < this.resources.length; i++) {
-            engine.resourcesById(this.resources[i]).modify(this.quantaties[i], engine);
-        }
-    };
-    Object.defineProperty(ResourceRequirement.prototype, "isEmpty", {
-        get: function () {
-            return this.resources.length == 0;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    return ResourceRequirement;
+    return Technology;
 })();
-var Stat = (function () {
-    function Stat(id, name) {
-        this.isDecimal = true;
-        this.hasCap = true;
-        this.id = id;
-        this.name = name;
-        this._value = 0;
-        this._rateCache = 0;
-        this._capCache = 0;
-        this.rateModifiers = new Array();
-        this.capModifiers = new Array();
+var Hacks = (function () {
+    function Hacks() {
     }
-    Stat.prototype.updateStart = function (timeDelta) {
-        this._value += this._rateCache * timeDelta;
-    };
-    Stat.prototype.updateEnd = function (engine) {
-        if (this.hasCap && this._value > this._capCache) {
-            this._value = this._capCache;
-            engine.playerData.limitOnResourcesWasHit = true;
+    Hacks.globalToLocal = function (e) {
+        var element = e.currentTarget;
+        var xPosition = -(document.documentElement.scrollLeft || document.body.scrollLeft);
+        var yPosition = -(document.documentElement.scrollTop || document.body.scrollTop);
+        while (element) {
+            xPosition += (element.offsetLeft + element.clientLeft);
+            yPosition += (element.offsetTop + element.clientTop);
+            element = element.offsetParent;
         }
-        else if (this._value < 0)
-            this._value = 0;
+        xPosition = e.clientX - xPosition;
+        yPosition = e.clientY - yPosition;
+        return { x: xPosition, y: yPosition };
     };
-    //Insert
-    Stat.prototype.insertRateModifier = function (modifier) {
-        this.rateModifiers.push(modifier);
-        var add = 0;
-        var multi = 0;
-        for (var i = 0; i < this.rateModifiers.length; i++) {
-            add += this.rateModifiers[i].add;
-            multi += this.rateModifiers[i].multi;
-        }
-        this._rateCache = add * (multi + 1);
-    };
-    Stat.prototype.insertCapModifier = function (modifier) {
-        this.capModifiers.push(modifier);
-        var add = 0;
-        var multi = 0;
-        for (var i = 0; i < this.capModifiers.length; i++) {
-            add += this.capModifiers[i].add;
-            multi += this.capModifiers[i].multi;
-        }
-        this._capCache = add * (multi + 1);
-    };
-    //Edit
-    Stat.prototype.editRateModifier = function (key, newAdd, newMulti) {
-        var add = 0;
-        var multi = 0;
-        for (var i = 0; i < this.rateModifiers.length; i++) {
-            if (this.rateModifiers[i].key == key) {
-                this.rateModifiers[i].add = newAdd;
-                this.rateModifiers[i].multi = newMulti;
-            }
-            add += this.rateModifiers[i].add;
-            multi += this.rateModifiers[i].multi;
-        }
-        this._rateCache = add * (multi + 1);
-    };
-    Stat.prototype.editCapModifier = function (key, newAdd, newMulti) {
-        var add = 0;
-        var multi = 0;
-        for (var i = 0; i < this.capModifiers.length; i++) {
-            if (this.capModifiers[i].key == key) {
-                this.capModifiers[i].add = newAdd;
-                this.capModifiers[i].multi = newMulti;
-            }
-            add += this.capModifiers[i].add;
-            multi += this.capModifiers[i].multi;
-        }
-        this._capCache = add * (multi + 1);
-    };
-    Object.defineProperty(Stat.prototype, "value", {
-        get: function () {
-            return this._value;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Stat.prototype, "cap", {
-        get: function () {
-            return this._capCache;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Stat.prototype, "rate", {
-        get: function () {
-            return this._rateCache;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Stat.prototype.setValue = function (value, engine) {
-        if (this._value != value) {
-            var delta = value - this._value;
-            this._value = value;
-            if (this.onValueChanged != null)
-                this.onValueChanged(this, engine, delta);
-        }
-    };
-    Stat.prototype.modify = function (delta, engine) {
-        if (delta != 0) {
-            this._value += delta;
-            if (this.onValueChanged != null)
-                this.onValueChanged(this, engine, delta);
-        }
-    };
-    return Stat;
-})();
-var StatPrototype = (function () {
-    function StatPrototype(id, name, cpsFunction) {
-        this.id = id;
-        this.name = name;
-        this.cpsFunction = cpsFunction;
-    }
-    return StatPrototype;
+    return Hacks;
 })();
 var ActionsRenderer = (function () {
     function ActionsRenderer() {
@@ -851,6 +463,167 @@ var ActionViewData = (function () {
     };
     return ActionViewData;
 })();
+window.onload = function () {
+    var el = document.getElementById('content');
+    var binder = new Binder();
+    binder.create(el);
+    binder.start();
+};
+var Binder = (function () {
+    function Binder() {
+    }
+    Binder.prototype.create = function (rootElement) {
+        this.dataSource = new DataSource();
+        this.engine = new Engine();
+        this.renderer = new Renderer();
+        this.input = new Input();
+        this.logic = new Logic();
+        this.input.load(this.engine);
+        this.renderer.load(rootElement, this.engine, this.input);
+        this.logic.load(this.engine, this.renderer);
+        this.dataSource.initEngine(this.engine);
+    };
+    Binder.prototype.start = function () {
+        this.logic.start();
+    };
+    return Binder;
+})();
+var DataSource = (function () {
+    function DataSource() {
+    }
+    DataSource.prototype.initEngine = function (engine) {
+        GameRules.init();
+        var popResource = new Stat("pop", "pop");
+        popResource.insertCapModifier(new Modifier("init", 10, 0));
+        popResource.isDecimal = false;
+        engine.addResource(popResource);
+        popResource.isDiscovered = true;
+        var unemployedResource = new Stat("unemployed", "unemployed");
+        unemployedResource.onValueChanged = this.unemployedRule;
+        unemployedResource.isDecimal = false;
+        unemployedResource.hasCap = false;
+        unemployedResource.isDiscovered = true;
+        engine.addResource(unemployedResource);
+        var foodResource = new Stat("food", "food");
+        foodResource.setValue(15, engine);
+        foodResource.insertCapModifier(new Modifier("init", 20, 0));
+        foodResource.insertCapModifier(new Modifier("pop", 0, 0));
+        foodResource.insertRateModifier(new Modifier("pop", 0, 0));
+        foodResource.isDiscovered = true;
+        engine.addResource(foodResource);
+        popResource.onValueChanged = this.popRule;
+        popResource.setValue(3, engine);
+        engine.addRule(GameRules.foodRule);
+        var woodResource = new Stat("wood", "wood");
+        woodResource.insertCapModifier(new Modifier("init", 50, 0));
+        engine.addResource(woodResource);
+        var researchResource = new Stat("research", "research");
+        researchResource.insertCapModifier(new Modifier("init", 50, 0));
+        engine.addResource(researchResource);
+        var cultureResource = new Stat("culture", "culture");
+        cultureResource.hasCap = false;
+        engine.addResource(cultureResource);
+        //Grow
+        var growFailOutcome = new ActionOutcome("fail", 30, ActionOutcomes.growFailExec, ActionOutcomes.growFailHistoryEntry);
+        var growSuccessOutcome = new ActionOutcome("success", 90, ActionOutcomes.growSuccessExec, ActionOutcomes.growSuccessHistoryEntry);
+        var growAction = new Action("grow", "Raise a child", 2, 10 * 1000, new ResourceRequirement(["food"], [10]), [growFailOutcome, growSuccessOutcome]);
+        engine.addAction(growAction);
+        //Small hunt
+        var smallHuntFailOutcome = new ActionOutcome("fail", 10, ActionOutcomes.smallHuntFailExec, ActionOutcomes.smallHuntFailHistoryEntry);
+        var smallHuntMinorSuccess1Outcome = new ActionOutcome("minorSuccess1", 5, ActionOutcomes.smallHuntMinorSuccess1Exec, ActionOutcomes.smallHuntMinorSuccess1HistoryEntry);
+        var smallHuntMinorSuccess2Outcome = new ActionOutcome("minorSuccess2", 10, ActionOutcomes.smallHuntMinorSuccess2Exec, ActionOutcomes.smallHuntMinorSuccess2HistoryEntry);
+        var smallHuntMinorSuccess3Outcome = new ActionOutcome("minorSuccess3", 10, ActionOutcomes.smallHuntMinorSuccess3Exec, ActionOutcomes.smallHuntMinorSuccess3HistoryEntry);
+        var smallHuntMajorSuccess1Outcome = new ActionOutcome("majoruccess1", 25, ActionOutcomes.smallHuntMajorSuccess1Exec, ActionOutcomes.smallHuntMajorSuccess1HistoryEntry);
+        var smallHuntMajorSuccess2Outcome = new ActionOutcome("majoruccess2", 25, ActionOutcomes.smallHuntMajorSuccess2Exec, ActionOutcomes.smallHuntMajorSuccess2HistoryEntry);
+        var smallHuntAction = new Action("smallHunt", "Hunt", 3, 3 * 1000, new ResourceRequirement([], []), [smallHuntFailOutcome, smallHuntMinorSuccess1Outcome, smallHuntMinorSuccess2Outcome, smallHuntMinorSuccess3Outcome, smallHuntMajorSuccess1Outcome, smallHuntMajorSuccess2Outcome]);
+        engine.addAction(smallHuntAction);
+        smallHuntAction.isDiscovered = true;
+        smallHuntAction.viewData.isContentOpen = true;
+        //Great hunt
+        var greatHuntOutcome = new ActionOutcome("success", 1, ActionOutcomes.greatHunt, ActionOutcomes.greatHuntHistoryEntry);
+        var greatHuntAction = new Action("greatHunt", "Great Hunt", 6, 30 * 1000, new ResourceRequirement(["wood"], [10]), [greatHuntOutcome]);
+        engine.addAction(greatHuntAction);
+        engine.addRule(GameRules.huntingRule);
+        engine.addRule(GameRules.unlockGrowRule);
+        engine.addRule(GameRules.unlockGreatHuntRule);
+        this.addResearch(engine);
+    };
+    DataSource.prototype.popRule = function (stat, engine, delta) {
+        engine.resourcesById("food").editRateModifier("pop", -stat.value * DataSource.foorPerPop / 1000, 0);
+        engine.resourcesById("unemployed").setValue(engine.resourcesById("unemployed").value + delta, engine);
+        engine.resourcesById("food").editCapModifier("pop", stat.value * 10, 0);
+    };
+    //if there are not enough workers some actions must be canceled
+    DataSource.prototype.unemployedRule = function (stat, engine, delta) {
+        if (stat.value < 0) {
+            for (var i = 0; i < engine.actions.length; i++) {
+                if (engine.actions[i].isStarted && engine.actions[i].pop > 0) {
+                    logGame("The recent decrease in the number of available workers has made it impossible to finish " + engine.actions[i].name);
+                    engine.actions[i].cancel(engine);
+                    return;
+                }
+            }
+        }
+    };
+    DataSource.prototype.addResearch = function (engine) {
+        var humanity = new Technology("humanity", "Humanity", 0, 0, null, 0, new ResourceRequirement());
+        humanity.description = "Makes people human";
+        humanity.isDiscovered = true;
+        humanity.isFinished = true;
+        engine.addTech(humanity);
+        var stoneTools = new Technology("stoneTools", "Stone Tools", -1, -1, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        stoneTools.description = Technologies.stoneToolsDescription;
+        stoneTools.isDiscovered = true;
+        engine.addTech(stoneTools);
+        var gathering = new Technology("gathering", "Gathering", -1, 0, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        gathering.description = Technologies.stoneToolsDescription;
+        gathering.isDiscovered = true;
+        engine.addTech(gathering);
+        var language = new Technology("language", "Language", 0, 1, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        language.description = Technologies.stoneToolsDescription;
+        language.isDiscovered = true;
+        engine.addTech(language);
+        var tamingFire = new Technology("tamingFire", "Taming Fire", 0, -1, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        tamingFire.description = Technologies.stoneToolsDescription;
+        tamingFire.isDiscovered = true;
+        engine.addTech(tamingFire);
+        var mining = new Technology("mining", "Mining", -1, -2, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        mining.description = Technologies.stoneToolsDescription;
+        mining.isDiscovered = true;
+        engine.addTech(mining);
+        var socialHierarchy = new Technology("socialHierarchy", "Social Hierarchy", 1, 1, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        socialHierarchy.description = Technologies.stoneToolsDescription;
+        socialHierarchy.isDiscovered = true;
+        engine.addTech(socialHierarchy);
+        var agriculture = new Technology("agriculture", "Agriculture", -2, -1, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        agriculture.description = Technologies.stoneToolsDescription;
+        agriculture.isDiscovered = true;
+        engine.addTech(agriculture);
+        var stoneNBone = new Technology("stoneNBone", "Stone and bone weapons", -2, -3, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        stoneNBone.description = Technologies.stoneToolsDescription;
+        stoneNBone.isDiscovered = true;
+        engine.addTech(stoneNBone);
+        var irrigation = new Technology("irrigation", "Irrigation", -2, -2, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        irrigation.description = Technologies.stoneToolsDescription;
+        irrigation.isDiscovered = true;
+        engine.addTech(irrigation);
+        var hunting = new Technology("hunting", "Hunting", 0, -2, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        hunting.description = Technologies.stoneToolsDescription;
+        hunting.isDiscovered = true;
+        engine.addTech(hunting);
+        var painting = new Technology("painting", "Painting", 2, 2, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        painting.description = Technologies.stoneToolsDescription;
+        painting.isDiscovered = true;
+        engine.addTech(painting);
+        var monuments = new Technology("monuments", "Monuments", 2, 0, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        monuments.description = Technologies.stoneToolsDescription;
+        monuments.isDiscovered = true;
+        engine.addTech(monuments);
+    };
+    DataSource.foorPerPop = 0.1;
+    DataSource.canibalicFood = 20;
+    return DataSource;
+})();
 var DebugRenderer = (function () {
     function DebugRenderer() {
     }
@@ -889,6 +662,123 @@ var DebugRenderer = (function () {
     };
     return DebugRenderer;
 })();
+var Engine = (function () {
+    function Engine() {
+        this.timeScale = 1;
+        this.stepScale = 1;
+        this.numericScale = 0;
+        this._time = 0;
+        this._resources = new Array();
+        this._resourcesById = Object();
+        this._actions = new Array();
+        this._actionsById = Object();
+        this._rules = new Array();
+        this.playerData = new PlayerData();
+        this.ruleRemoveQueue = new Array();
+        this._tech = new Array();
+    }
+    Object.defineProperty(Engine.prototype, "time", {
+        get: function () {
+            return this._time;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Engine.prototype, "resources", {
+        get: function () {
+            return this._resources;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Engine.prototype.resourcesById = function (id) {
+        return this._resourcesById[id];
+    };
+    Object.defineProperty(Engine.prototype, "actions", {
+        get: function () {
+            return this._actions;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Engine.prototype.actionsById = function (id) {
+        return this._actionsById[id];
+    };
+    Object.defineProperty(Engine.prototype, "rules", {
+        get: function () {
+            return this._rules;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Engine.prototype, "tech", {
+        get: function () {
+            return this._tech;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Engine.prototype.update = function (timeDelta) {
+        this._time += timeDelta;
+        this.isUpdateInProgress = true;
+        for (var i = 0; i < this._resources.length; i++) {
+            this._resources[i].updateStart(timeDelta);
+        }
+        for (var i = 0; i < this._actions.length; i++) {
+            if (this._actions[i].isStarted) {
+                this._actions[i].update(timeDelta);
+                if (this._actions[i].isComplete)
+                    this._actions[i].apply(this);
+            }
+        }
+        for (var i = 0; i < this._rules.length; i++) {
+            this._rules[i].exec(this);
+        }
+        for (var i = 0; i < this._resources.length; i++) {
+            this._resources[i].updateEnd(this);
+        }
+        this.isUpdateInProgress = false;
+        if (this.ruleRemoveQueue.length > 0) {
+            for (var i = 0; i < this.ruleRemoveQueue.length; i++) {
+                this.removeRule(this.ruleRemoveQueue[i], true);
+            }
+            this.ruleRemoveQueue.length = 0;
+        }
+    };
+    Engine.prototype.addResource = function (resource) {
+        this._resources.push(resource);
+        this._resourcesById[resource.id] = resource;
+    };
+    Engine.prototype.addAction = function (action) {
+        this._actions.push(action);
+        this._actionsById[action.id] = action;
+    };
+    Engine.prototype.addRule = function (rule) {
+        this._rules.push(rule);
+    };
+    Engine.prototype.addTech = function (tech) {
+        this._tech.push(tech);
+    };
+    Engine.prototype.removeRule = function (rule, isSilent) {
+        if (isSilent === void 0) { isSilent = false; }
+        if (!isSilent) {
+            logEngine("Removed rule " + rule.id);
+        }
+        if (this.isUpdateInProgress) {
+            var indsexOf = this._rules.indexOf(rule);
+            this.ruleRemoveQueue.push(rule);
+            return;
+        }
+        var indexOf = this._rules.indexOf(rule);
+        this._rules.splice(indexOf, 1);
+    };
+    Engine.prototype.finishTech = function (tech) {
+        tech.resources.subtractFrom(this);
+        tech.exec(tech, this);
+        tech.isFinished = true;
+    };
+    return Engine;
+})();
 var HelperHTML = (function () {
     function HelperHTML() {
     }
@@ -904,7 +794,278 @@ var HelperHTML = (function () {
         }
         return elem;
     };
+    HelperHTML.eject = function (el) {
+        HelperHTML.ejecties.push(el);
+        HelperHTML.ejectParents.push(el.parentElement);
+        el.parentElement.removeChild(el);
+    };
+    HelperHTML.inject = function (el) {
+        var index = HelperHTML.ejecties.indexOf(el);
+        HelperHTML.ejectParents[index].appendChild(el);
+        HelperHTML.ejecties.splice(index, 1);
+        HelperHTML.ejectParents.splice(index, 1);
+    };
+    HelperHTML.ejecties = new Array();
+    HelperHTML.ejectParents = new Array();
     return HelperHTML;
+})();
+var Input = (function () {
+    function Input() {
+    }
+    Input.prototype.load = function (engine) {
+        this.engine = engine;
+    };
+    Input.prototype.timeScaleDown = function () {
+        this.engine.numericScale--;
+        this.updateTimeScales();
+    };
+    Input.prototype.timeScaleNormal = function () {
+        this.engine.numericScale = 0;
+        this.updateTimeScales();
+    };
+    Input.prototype.timeScaleUp = function () {
+        this.engine.numericScale++;
+        this.updateTimeScales();
+    };
+    Input.prototype.timeScaleStop = function () {
+        this.engine.timeScale = 0;
+    };
+    Input.prototype.updateTimeScales = function () {
+        this.engine.timeScale = 1 + this.engine.numericScale / 5;
+        this.engine.stepScale = Math.pow(0.9, this.engine.numericScale);
+    };
+    Input.prototype.activateAction = function (action) {
+        if (action.isAvailable(this.engine))
+            action.start(this.engine);
+    };
+    Input.prototype.cancelAction = function (action) {
+        if (action.isStarted)
+            action.cancel(this.engine);
+    };
+    Input.prototype.onTechClick = function (tech) {
+        if (tech.isAvailable(this.engine))
+            this.engine.finishTech(tech);
+    };
+    return Input;
+})();
+var Logger = (function () {
+    function Logger() {
+    }
+    Logger.gameLog = new Array();
+    Logger.engineLog = new Array();
+    return Logger;
+})();
+function logGame(content) {
+    Logger.gameLog.push(content);
+}
+function logEngine(content) {
+    Logger.engineLog.push(content);
+}
+function trace() {
+    var args = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+        args[_i - 0] = arguments[_i];
+    }
+    console.log(args.join(" "));
+}
+var Logic = (function () {
+    function Logic() {
+    }
+    Logic.prototype.load = function (engine, renderer) {
+        this.engine = engine;
+        this.renderer = renderer;
+    };
+    Logic.prototype.start = function () {
+        var _this = this;
+        this.timeStamp = new Date().getTime();
+        this.isActive = true;
+        setTimeout(function () { return _this.update(); }, Logic.UPDATE_PERIOD);
+    };
+    Logic.prototype.update = function () {
+        var _this = this;
+        if (!this.isActive)
+            return;
+        var newStamp = new Date().getTime();
+        var delta = Math.min(newStamp - this.timeStamp, Logic.UPDATE_PERIOD * 1.5);
+        delta *= this.engine.timeScale / this.engine.stepScale;
+        this.timeStamp = newStamp;
+        this.engine.update(delta);
+        this.renderer.update(delta);
+        setTimeout(function () { return _this.update(); }, Logic.UPDATE_PERIOD * this.engine.stepScale);
+    };
+    Logic.UPDATE_PERIOD = 300;
+    return Logic;
+})();
+var HexGrid = (function () {
+    function HexGrid() {
+    }
+    HexGrid.prototype.load = function (canvas) {
+        this.canvas = canvas;
+        this.context = canvas.getContext("2d");
+    };
+    HexGrid.prototype.render = function (techList) {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.sqGrid = {};
+        var minX = Number.MAX_VALUE;
+        var minY = Number.MAX_VALUE;
+        var maxX = -Number.MAX_VALUE;
+        var maxY = -Number.MAX_VALUE;
+        for (var i = 0; i < techList.length; i++) {
+            minX = Math.min(minX, techList[i].x);
+            minY = Math.min(minY, techList[i].y);
+            maxX = Math.max(maxX, techList[i].x);
+            maxY = Math.max(maxY, techList[i].y);
+            this.sqGrid[techList[i].x + techList[i].y * HexGrid.MAX_GRID_SIZE] = techList[i];
+        }
+        var maxWidth = (this.canvas.width - HexGrid.PADDING * 2) / (maxX - minX + 3 / 2);
+        var maxHeight = (this.canvas.height - HexGrid.PADDING * 2) / ((maxY - minY) * 3 / 4 + 1);
+        maxWidth = maxWidth / Math.sqrt(3);
+        maxHeight = maxHeight / 2;
+        this.sideLength = Math.min(maxHeight, maxWidth);
+        for (i = 0; i < techList.length; i++) {
+            var hasNeighbour = this.hasFinishedNeighbour(techList[i]);
+            if (techList[i].isFinished || hasNeighbour || true) {
+                this.drawHex(this.sideLength, techList[i].x - minX, techList[i].y - minY);
+            }
+        }
+        this.minX = minX;
+        this.minY = minY;
+    };
+    HexGrid.prototype.renderOverlayHex = function (tech, context, moreData) {
+        if (moreData === void 0) { moreData = {}; }
+        context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        if (tech) {
+            this.drawHex(this.sideLength, tech.x - this.minX, tech.y - this.minY, "#8888aa", context);
+        }
+    };
+    HexGrid.prototype.drawHex = function (sideLength, coordX, coordY, color, context) {
+        if (color === void 0) { color = "#7777ff"; }
+        if (context === void 0) { context = null; }
+        context = context || this.context;
+        var centerX = this.getCenterX(sideLength, coordX, coordY);
+        var centerY = this.getCenterY(sideLength, coordX, coordY);
+        //console.log("hex " + label +": " + centerX.toFixed() + " " + centerY.toFixed());
+        sideLength *= 0.97;
+        context.fillStyle = color;
+        context.strokeStyle = "#4444bb";
+        context.beginPath();
+        for (var i = 0; i < 6; i++) {
+            var angle = Math.PI / 3 * (i + 0.5);
+            var x = centerX + sideLength * Math.cos(angle);
+            var y = centerY + sideLength * Math.sin(angle);
+            if (i == 0)
+                context.moveTo(x, y);
+            else
+                context.lineTo(x, y);
+        }
+        context.closePath();
+        context.fill();
+        context.stroke();
+        context.fillStyle = "#000000";
+    };
+    HexGrid.prototype.getCenterX = function (sideLength, coordX, coordY) {
+        return HexGrid.PADDING + sideLength * Math.sqrt(3) * (coordX + (coordY % 2 == 1 ? 0.5 : 1));
+    };
+    HexGrid.prototype.getCenterY = function (sideLength, coordX, coordY) {
+        return HexGrid.PADDING + sideLength * (coordY * 3 / 2 + 1);
+    };
+    HexGrid.prototype.hexCenter = function (tech) {
+        return { x: this.getCenterX(this.sideLength, tech.x - this.minX, tech.y - this.minY), y: this.getCenterY(this.sideLength, tech.x - this.minX, tech.y - this.minY) };
+    };
+    Object.defineProperty(HexGrid.prototype, "hexWidth", {
+        get: function () {
+            return this.sideLength * Math.sqrt(3);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(HexGrid.prototype, "hexHeight", {
+        get: function () {
+            return this.sideLength * 4 / Math.sqrt(3);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    HexGrid.prototype.techByPoint = function (x, y) {
+        return this.sqGrid[x + y * HexGrid.MAX_GRID_SIZE];
+    };
+    HexGrid.prototype.hasFinishedNeighbour = function (tech) {
+        var neighbours = this.getNeighbours(tech.x, tech.y);
+        for (var i = 0; i < neighbours.length; i++) {
+            if (neighbours[i].isFinished)
+                return true;
+        }
+        return false;
+    };
+    HexGrid.prototype.getNeighbours = function (x, y) {
+        var neighbours = new Array();
+        var neighbour = this.techByPoint(x - 1, y);
+        if (neighbour)
+            neighbours.push(neighbour);
+        neighbour = this.techByPoint(x, y - 1);
+        if (neighbour)
+            neighbours.push(neighbour);
+        neighbour = this.techByPoint(x + 1, y);
+        if (neighbour)
+            neighbours.push(neighbour);
+        neighbour = this.techByPoint(x, y + 1);
+        if (neighbour)
+            neighbours.push(neighbour);
+        if (y % 2 == 0) {
+            neighbour = this.techByPoint(x - 1, y - 1);
+            if (neighbour)
+                neighbours.push(neighbour);
+            neighbour = this.techByPoint(x - 1, y + 1);
+            if (neighbour)
+                neighbours.push(neighbour);
+        }
+        else {
+            neighbour = this.techByPoint(x + 1, y - 1);
+            if (neighbour)
+                neighbours.push(neighbour);
+            neighbour = this.techByPoint(x + 1, y + 1);
+            if (neighbour)
+                neighbours.push(neighbour);
+        }
+        return neighbours;
+    };
+    HexGrid.prototype.coordinatesToTech = function (x, y, debugData) {
+        var aprX = Math.floor((x - HexGrid.PADDING) / (this.sideLength * Math.sqrt(3))) + this.minX;
+        var aprY = Math.floor((y - HexGrid.PADDING) / (this.sideLength * 3 / 2)) + this.minY;
+        var aprTech = this.techByPoint(aprX, aprY);
+        var neighbours = this.getNeighbours(aprX, aprY);
+        if (aprTech)
+            neighbours.push(aprTech);
+        var bestIndex = -1;
+        var bestDistance = Number.POSITIVE_INFINITY;
+        for (var i = 0; i < neighbours.length; i++) {
+            var centerX = this.getCenterX(this.sideLength, neighbours[i].x - this.minX, neighbours[i].y - this.minY);
+            var centerY = this.getCenterY(this.sideLength, neighbours[i].x - this.minX, neighbours[i].y - this.minY);
+            /*	if (debugData) {
+                    var ctx: CanvasRenderingContext2D = <CanvasRenderingContext2D>debugData;
+                    ctx.strokeStyle = "#222222";
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(centerX, centerY);
+                    ctx.stroke();
+                }*/
+            var distance = (x - centerX) * (x - centerX) + (y - centerY) * (y - centerY);
+            if (distance < bestDistance) {
+                bestIndex = i;
+                bestDistance = distance;
+            }
+        }
+        //trace("apr coordinates:", aprX, aprY, aprTech ? aprTech.id : "-", x.toFixed(), y.toFixed(), "distance:", Math.sqrt(bestDistance));
+        //TODO: instead of this hack, getNeighbours should work with points instead of techs and always look through 6 neighbours
+        if (Math.sqrt(bestDistance) < this.sideLength)
+            return neighbours[bestIndex];
+        else
+            return null;
+    };
+    HexGrid.MAX_GRID_SIZE = 100;
+    HexGrid.PADDING = 4;
+    HexGrid.SPACING = 4;
+    return HexGrid;
 })();
 var LogRenderer = (function () {
     function LogRenderer() {
@@ -928,6 +1089,14 @@ var LogRenderer = (function () {
     };
     return LogRenderer;
 })();
+var Modifier = (function () {
+    function Modifier(key, add, multi) {
+        this.key = key;
+        this.add = add;
+        this.multi = multi;
+    }
+    return Modifier;
+})();
 var Renderer = (function () {
     function Renderer() {
         this.debugRenderer = new DebugRenderer();
@@ -935,6 +1104,7 @@ var Renderer = (function () {
         this.actionsRenderer = new ActionsRenderer();
         this.gameLogRenderer = new LogRenderer();
         this.debugLogRenderer = new LogRenderer();
+        this.techRenderer = new TechRenderer();
     }
     Renderer.prototype.load = function (root, engine, input) {
         var _this = this;
@@ -946,6 +1116,7 @@ var Renderer = (function () {
         this.actionsRenderer.load(root.getElementsByClassName("actionsPanel")[0], engine, input);
         this.gameLogRenderer.load(root.getElementsByClassName("gameLog")[0], Logger.gameLog);
         this.debugLogRenderer.load(root.getElementsByClassName("debugLogPanel")[0], Logger.engineLog);
+        this.techRenderer.load(root.getElementsByClassName("techPanel")[0], engine, input);
         this.visibilityData = new VisibilityData();
         if (input)
             document.onkeydown = function (e) {
@@ -973,6 +1144,7 @@ var Renderer = (function () {
         this.actionsRenderer.update(timeDelta, this.visibilityData);
         this.gameLogRenderer.update(timeDelta, this.visibilityData);
         this.debugLogRenderer.update(timeDelta, this.visibilityData);
+        this.techRenderer.update(timeDelta, this.visibilityData);
     };
     Renderer.prototype.switchTo = function (elementId) {
         var element = document.getElementById(elementId);
@@ -1046,6 +1218,39 @@ var RenderUtils = (function () {
     RenderUtils.precision = 2;
     return RenderUtils;
 })();
+var ResourceRequirement = (function () {
+    function ResourceRequirement(resources, quantaties) {
+        if (resources === void 0) { resources = []; }
+        if (quantaties === void 0) { quantaties = []; }
+        this.resources = resources;
+        this.quantaties = quantaties;
+    }
+    ResourceRequirement.prototype.isMet = function (engine) {
+        for (var i = 0; i < this.resources.length; i++) {
+            if (engine.resourcesById(this.resources[i]).value < this.quantaties[i])
+                return false;
+        }
+        return true;
+    };
+    ResourceRequirement.prototype.subtractFrom = function (engine) {
+        for (var i = 0; i < this.resources.length; i++) {
+            engine.resourcesById(this.resources[i]).modify(-this.quantaties[i], engine);
+        }
+    };
+    ResourceRequirement.prototype.giveBack = function (engine) {
+        for (var i = 0; i < this.resources.length; i++) {
+            engine.resourcesById(this.resources[i]).modify(this.quantaties[i], engine);
+        }
+    };
+    Object.defineProperty(ResourceRequirement.prototype, "isEmpty", {
+        get: function () {
+            return this.resources.length == 0;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    return ResourceRequirement;
+})();
 var ResourcesRenderer = (function () {
     function ResourcesRenderer() {
     }
@@ -1075,6 +1280,239 @@ var ResourcesRenderer = (function () {
         this.engine = engine;
     };
     return ResourcesRenderer;
+})();
+var Stat = (function () {
+    function Stat(id, name) {
+        this.isDecimal = true;
+        this.hasCap = true;
+        this.id = id;
+        this.name = name;
+        this._value = 0;
+        this._rateCache = 0;
+        this._capCache = 0;
+        this.rateModifiers = new Array();
+        this.capModifiers = new Array();
+    }
+    Stat.prototype.updateStart = function (timeDelta) {
+        this._value += this._rateCache * timeDelta;
+    };
+    Stat.prototype.updateEnd = function (engine) {
+        if (this.hasCap && this._value > this._capCache) {
+            this._value = this._capCache;
+            engine.playerData.limitOnResourcesWasHit = true;
+        }
+        else if (this._value < 0)
+            this._value = 0;
+    };
+    //Insert
+    Stat.prototype.insertRateModifier = function (modifier) {
+        this.rateModifiers.push(modifier);
+        var add = 0;
+        var multi = 0;
+        for (var i = 0; i < this.rateModifiers.length; i++) {
+            add += this.rateModifiers[i].add;
+            multi += this.rateModifiers[i].multi;
+        }
+        this._rateCache = add * (multi + 1);
+    };
+    Stat.prototype.insertCapModifier = function (modifier) {
+        this.capModifiers.push(modifier);
+        var add = 0;
+        var multi = 0;
+        for (var i = 0; i < this.capModifiers.length; i++) {
+            add += this.capModifiers[i].add;
+            multi += this.capModifiers[i].multi;
+        }
+        this._capCache = add * (multi + 1);
+    };
+    //Edit
+    Stat.prototype.editRateModifier = function (key, newAdd, newMulti) {
+        var add = 0;
+        var multi = 0;
+        for (var i = 0; i < this.rateModifiers.length; i++) {
+            if (this.rateModifiers[i].key == key) {
+                this.rateModifiers[i].add = newAdd;
+                this.rateModifiers[i].multi = newMulti;
+            }
+            add += this.rateModifiers[i].add;
+            multi += this.rateModifiers[i].multi;
+        }
+        this._rateCache = add * (multi + 1);
+    };
+    Stat.prototype.editCapModifier = function (key, newAdd, newMulti) {
+        var add = 0;
+        var multi = 0;
+        for (var i = 0; i < this.capModifiers.length; i++) {
+            if (this.capModifiers[i].key == key) {
+                this.capModifiers[i].add = newAdd;
+                this.capModifiers[i].multi = newMulti;
+            }
+            add += this.capModifiers[i].add;
+            multi += this.capModifiers[i].multi;
+        }
+        this._capCache = add * (multi + 1);
+    };
+    Object.defineProperty(Stat.prototype, "value", {
+        get: function () {
+            return this._value;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Stat.prototype, "cap", {
+        get: function () {
+            return this._capCache;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Stat.prototype, "rate", {
+        get: function () {
+            return this._rateCache;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Stat.prototype.setValue = function (value, engine) {
+        if (this._value != value) {
+            var delta = value - this._value;
+            this._value = value;
+            if (this.onValueChanged != null)
+                this.onValueChanged(this, engine, delta);
+        }
+    };
+    Stat.prototype.modify = function (delta, engine) {
+        if (delta != 0) {
+            this._value += delta;
+            if (this.onValueChanged != null)
+                this.onValueChanged(this, engine, delta);
+        }
+    };
+    return Stat;
+})();
+var StatPrototype = (function () {
+    function StatPrototype(id, name, cpsFunction) {
+        this.id = id;
+        this.name = name;
+        this.cpsFunction = cpsFunction;
+    }
+    return StatPrototype;
+})();
+var TechRenderer = (function () {
+    function TechRenderer() {
+    }
+    TechRenderer.prototype.update = function (timeDelta, visibilityData) {
+        if (visibilityData.visibleTab != VisibilityData.TAB_SOMETHING_ELSE) {
+            return;
+        }
+        if (!this.isGridRendered) {
+            this.isGridRendered = true;
+            HelperHTML.eject(this.ui);
+            this.hexGrid.render(this.engine.tech);
+            for (var i = 0; i < this.engine.tech.length; i++) {
+                this.renderTechUI(this.engine.tech[i]);
+            }
+            HelperHTML.inject(this.ui);
+        }
+    };
+    TechRenderer.prototype.load = function (root, engine, input) {
+        var _this = this;
+        this.root = root;
+        this.engine = engine;
+        this.input = input;
+        this.hexGrid = new HexGrid();
+        //var smth:HTMLElement = <HTMLElement>root.getElementsByClassName("mainTechCanvas")[0];
+        this.hitArea = root.getElementsByClassName("techHitArea")[0];
+        this.hexGrid.load(root.getElementsByClassName("mainTechCanvas")[0]);
+        this.ui = root.getElementsByClassName("techUI")[0];
+        this.hitArea.onmousemove = function (e) { return _this.onMouseMove(e); };
+        this.hitArea.onmouseleave = function () { return _this.onMouseLeave(); };
+        this.hitArea.onclick = function (e) { return _this.onMouseClick(e); };
+        this.overlay = root.getElementsByClassName("overlayTechCanvas")[0].getContext("2d");
+        this.background = root.getElementsByClassName("mainTechCanvas")[0].getContext("2d");
+    };
+    TechRenderer.prototype.onMouseMove = function (event) {
+        var position = Hacks.globalToLocal(event);
+        var debugData = {};
+        var tech = this.hexGrid.coordinatesToTech(position.x, position.y, this.overlay);
+        if (this.lastRenderedTech != tech) {
+            if (this.lastRenderedTech)
+                this.lastRenderedTech.viewData.tooltip.style.display = "none";
+            this.lastRenderedTech = tech;
+            this.hexGrid.renderOverlayHex(tech, this.overlay);
+            if (tech)
+                tech.viewData.tooltip.style.display = "block";
+        }
+    };
+    TechRenderer.prototype.onMouseClick = function (event) {
+        var tech = this.hexGrid.coordinatesToTech(event.x, event.y, this.overlay);
+        if (tech)
+            /*
+            console.log(tech.id + " " + event.x.toFixed()  + " " +  event.y.toFixed());
+        else
+            console.log("nothing here " + event.x.toFixed() + " " + event.y.toFixed());*/
+            this.input.onTechClick(tech);
+    };
+    TechRenderer.prototype.onMouseLeave = function () {
+        this.lastRenderedTech = null;
+        this.hexGrid.renderOverlayHex(null, this.overlay);
+    };
+    TechRenderer.prototype.renderTechUI = function (tech) {
+        var position = this.hexGrid.hexCenter(tech);
+        var f = document.createDocumentFragment();
+        var containerDiv = HelperHTML.element("div", "researchUI");
+        var headerDiv = HelperHTML.element("div", "");
+        var header = HelperHTML.element("span", "techHeader", tech.name);
+        var tooltipDesc = HelperHTML.element("div", "techDescContainer");
+        var descSpan = HelperHTML.element("div", "techDesc", tech.description);
+        tooltipDesc.style.display = "none";
+        var reqsDiv = HelperHTML.element("div", "", tech.researchCost.toFixed());
+        var researchReqDiv = HelperHTML.element("div", "");
+        //var tooltipResearch: HTMLElement = HelperHTML.element("div", "baseTooltip, techResearch", "TODO");
+        var list = HelperHTML.element("ol", "reseqrchReqList");
+        if (tech.resources) {
+            for (var i = 0; i < tech.resources.resources.length; i++) {
+                var item = HelperHTML.element("li", "reseqrchReqListItem", tech.resources.quantaties[i].toString() + "\t" + tech.resources.resources[i]);
+                list.appendChild(item);
+            }
+        }
+        f.appendChild(containerDiv);
+        containerDiv.appendChild(headerDiv);
+        headerDiv.appendChild(header);
+        containerDiv.appendChild(tooltipDesc);
+        tooltipDesc.appendChild(descSpan);
+        containerDiv.appendChild(reqsDiv);
+        reqsDiv.appendChild(researchReqDiv);
+        //researchReqDiv.appendChild(tooltipResearch);
+        researchReqDiv.appendChild(list);
+        containerDiv.style.width = this.hexGrid.hexWidth * 0.9 + "px";
+        headerDiv.style.width = this.hexGrid.hexWidth * 0.9 + "px";
+        containerDiv.style.height = this.hexGrid.hexHeight * 0.9 + "px";
+        containerDiv.style.left = (position.x - this.hexGrid.hexWidth * 0.9 / 2) + "px";
+        containerDiv.style.top = (position.y - this.hexGrid.hexHeight * 0.9 / 4) + "px";
+        tooltipDesc.style.height = this.hexGrid.hexHeight * 0.9 + "px";
+        trace(tooltipDesc.style.height);
+        tooltipDesc.style.left = this.hexGrid.hexWidth * 0.95 + "px";
+        tooltipDesc.style.top = -this.hexGrid.hexHeight * 0.9 / 4 + "px";
+        this.ui.appendChild(f);
+        tech.viewData.element = containerDiv;
+        tech.viewData.tooltip = tooltipDesc;
+    };
+    return TechRenderer;
+})();
+var TechViewData = (function () {
+    function TechViewData() {
+    }
+    TechViewData.prototype.setRendered = function (tech, element, engine) {
+        this.isRendered = true;
+        this.element = element;
+        this.tooltip = element.getElementsByClassName("baseTooltip")[0];
+        this.isAvailable = tech.isAvailable(engine);
+    };
+    TechViewData.prototype.isValid = function (tech, engine) {
+        return this.isFinished == tech.isFinished && this.isAvailable == tech.isAvailable(engine);
+    };
+    return TechViewData;
 })();
 var VisibilityData = (function () {
     function VisibilityData() {

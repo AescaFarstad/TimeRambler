@@ -3,7 +3,7 @@
     public resources: Array<string>;
     public quantaties: Array<number>;
 
-    constructor(resources: Array<string>, quantaties: Array<number>) {
+    constructor(resources: Array<string> = [], quantaties: Array<number> = []) {
         this.resources = resources;
         this.quantaties = quantaties;
     }

@@ -8,6 +8,7 @@
         this._rules = new Array<GameRule>();
         this.playerData = new PlayerData();
         this.ruleRemoveQueue = new Array<GameRule>();
+        this._tech = new Array<Technology>();
     }
 
     public timeScale: number = 1;
@@ -45,6 +46,11 @@
     private _rules: Array<GameRule>;
     public get rules(): Array<GameRule> {
         return this._rules;
+	}
+
+    private _tech: Array<Technology>;
+    public get tech(): Array<Technology> {
+        return this._tech;
     }
 
     public update(timeDelta:number):void {
@@ -92,6 +98,10 @@
 
     public addRule(rule: GameRule): void {
         this._rules.push(rule);
+	}
+
+	public addTech(tech: Technology): void {
+        this._tech.push(tech);
     }
 
     public removeRule(rule: GameRule, isSilent: boolean = false): void {
@@ -106,4 +116,12 @@
         var indexOf: number = this._rules.indexOf(rule);
         this._rules.splice(indexOf, 1);
     }
+
+	public finishTech(tech: Technology): void {
+		tech.resources.subtractFrom(this);
+        tech.exec(tech, this);
+		tech.isFinished = true;
+    }
+
+	
 }  

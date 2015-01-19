@@ -6,6 +6,7 @@
         this.actionsRenderer = new ActionsRenderer();
         this.gameLogRenderer = new LogRenderer();
         this.debugLogRenderer = new LogRenderer();
+        this.techRenderer = new TechRenderer();
 
     }
 
@@ -17,6 +18,7 @@
     private actionsRenderer: ActionsRenderer;
     private gameLogRenderer: LogRenderer;
     private debugLogRenderer: LogRenderer;
+    private techRenderer: TechRenderer;
 
     private input: Input;
     private visibilityData: VisibilityData;
@@ -33,6 +35,7 @@
         this.actionsRenderer.load(<HTMLElement> root.getElementsByClassName("actionsPanel")[0], engine, input);
         this.gameLogRenderer.load(<HTMLElement> root.getElementsByClassName("gameLog")[0], Logger.gameLog);
         this.debugLogRenderer.load(<HTMLElement> root.getElementsByClassName("debugLogPanel")[0], Logger.engineLog);
+        this.techRenderer.load(<HTMLElement> root.getElementsByClassName("techPanel")[0], engine, input);
         this.visibilityData = new VisibilityData();
         if (input)
             document.onkeydown = (e) => {
@@ -57,6 +60,7 @@
         this.actionsRenderer.update(timeDelta, this.visibilityData);
         this.gameLogRenderer.update(timeDelta, this.visibilityData);
         this.debugLogRenderer.update(timeDelta, this.visibilityData);
+        this.techRenderer.update(timeDelta, this.visibilityData);
     }
 
     private switchTo(elementId: string): void {

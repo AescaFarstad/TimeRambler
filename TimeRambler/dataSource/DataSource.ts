@@ -41,6 +41,14 @@
         woodResource.insertCapModifier(new Modifier("init", 50, 0));
         engine.addResource(woodResource);
 
+        var researchResource: Stat = new Stat("research", "research");
+        researchResource.insertCapModifier(new Modifier("init", 50, 0));
+        engine.addResource(researchResource);
+
+        var cultureResource: Stat = new Stat("culture", "culture");
+        cultureResource.hasCap = false;
+        engine.addResource(cultureResource);
+
         //Grow
         var growFailOutcome: ActionOutcome = new ActionOutcome("fail", 30, ActionOutcomes.growFailExec, ActionOutcomes.growFailHistoryEntry);
         var growSuccessOutcome: ActionOutcome = new ActionOutcome("success", 90, ActionOutcomes.growSuccessExec, ActionOutcomes.growSuccessHistoryEntry);
@@ -68,10 +76,12 @@
 
         var greatHuntAction: Action = new Action("greatHunt", "Great Hunt", 6, 30 * 1000, new ResourceRequirement(["wood"], [10]), [greatHuntOutcome]);
         engine.addAction(greatHuntAction);
-
+		
         engine.addRule(GameRules.huntingRule);
         engine.addRule(GameRules.unlockGrowRule);
         engine.addRule(GameRules.unlockGreatHuntRule);
+
+        this.addResearch(engine);
     }
 
     private popRule(stat: Stat, engine: Engine, delta:number): void {
@@ -93,7 +103,74 @@
         }
     }
 
-    
+    private addResearch(engine: Engine): void {
+		var humanity: Technology = new Technology("humanity", "Humanity", 0, 0, null, 0, new ResourceRequirement());
+		humanity.description = "Makes people human";
+        humanity.isDiscovered = true;
+        humanity.isFinished = true;
+		engine.addTech(humanity);
+
+		var stoneTools: Technology = new Technology("stoneTools", "Stone Tools", -1, -1, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+		stoneTools.description = Technologies.stoneToolsDescription;
+		stoneTools.isDiscovered = true;
+		engine.addTech(stoneTools);
+
+		var gathering: Technology = new Technology("gathering", "Gathering", -1, 0, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+		gathering.description = Technologies.stoneToolsDescription;
+		gathering.isDiscovered = true;
+		engine.addTech(gathering);
+
+		var language: Technology = new Technology("language", "Language", 0, 1, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+		language.description = Technologies.stoneToolsDescription;
+		language.isDiscovered = true;
+		engine.addTech(language);
+
+		var tamingFire: Technology = new Technology("tamingFire", "Taming Fire", 0, -1, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+		tamingFire.description = Technologies.stoneToolsDescription;
+		tamingFire.isDiscovered = true;
+		engine.addTech(tamingFire);
+		
+		var mining: Technology = new Technology("mining", "Mining", -1, -2, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+		mining.description = Technologies.stoneToolsDescription;
+		mining.isDiscovered = true;
+		engine.addTech(mining);
+
+		var socialHierarchy: Technology = new Technology("socialHierarchy", "Social Hierarchy", 1, 1, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+		socialHierarchy.description = Technologies.stoneToolsDescription;
+		socialHierarchy.isDiscovered = true;
+		engine.addTech(socialHierarchy);
+
+		var agriculture: Technology = new Technology("agriculture", "Agriculture", -2, -1, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+		agriculture.description = Technologies.stoneToolsDescription;
+		agriculture.isDiscovered = true;
+		engine.addTech(agriculture);
+
+		var stoneNBone: Technology = new Technology("stoneNBone", "Stone and bone weapons", -2, -3, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+		stoneNBone.description = Technologies.stoneToolsDescription;
+		stoneNBone.isDiscovered = true;
+		engine.addTech(stoneNBone);
+
+		var irrigation: Technology = new Technology("irrigation", "Irrigation", -2, -2, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+		irrigation.description = Technologies.stoneToolsDescription;
+		irrigation.isDiscovered = true;
+		engine.addTech(irrigation);
+
+		var hunting: Technology = new Technology("hunting", "Hunting", 0, -2, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+		hunting.description = Technologies.stoneToolsDescription;
+		hunting.isDiscovered = true;
+		engine.addTech(hunting);
+
+		var painting: Technology = new Technology("painting", "Painting", 2, 2, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+		painting.description = Technologies.stoneToolsDescription;
+		painting.isDiscovered = true;
+		engine.addTech(painting);
+
+		var monuments: Technology = new Technology("monuments", "Monuments", 2, 0, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+		monuments.description = Technologies.stoneToolsDescription;
+		monuments.isDiscovered = true;
+		engine.addTech(monuments);
+
+    }
 
     
 
