@@ -6,6 +6,7 @@ var GameRules = (function () {
         GameRules.huntingRule = new GameRule("huntingRule", GameRules.huntingRuleExec);
         GameRules.unlockGrowRule = new GameRule("unlockGrowRule", GameRules.unlockGrowRuleExec);
         GameRules.unlockGreatHuntRule = new GameRule("unlockGreatHuntRule", GameRules.unlockGreatHuntRuleExec);
+        GameRules.dicoverScienceRule = new GameRule("dicoverScienceRule", GameRules.dicoverScienceRuleExec);
     };
     GameRules.foodRuleExec = function (engine) {
         var food = engine.resourcesById("food");
@@ -40,6 +41,12 @@ var GameRules = (function () {
             engine.removeRule(GameRules.unlockGreatHuntRule);
         }
     };
+    GameRules.dicoverScienceRuleExec = function (engine) {
+        if (engine.resourcesById("science").value >= 3) {
+            engine.resourcesById("science").isDiscovered = true;
+            engine.removeRule(GameRules.dicoverScienceRule);
+        }
+    };
     return GameRules;
 })();
 var Technologies = (function () {
@@ -49,15 +56,17 @@ var Technologies = (function () {
         logGame("discovered <b>" + technology.name + "</b>");
     };
     //stoneTools
-    Technologies.stoneToolsDescription = "Birth complications. Don't ask.";
+    Technologies.stoneToolsDescription = "The true meaning will become clear later.";
     return Technologies;
 })();
 var Action = (function () {
-    function Action(id, name, pop, time, resources, outcomes) {
+    function Action(id, name, pop, time, science, scienceFactor, resources, outcomes) {
         this.id = id;
         this.name = name;
         this.pop = pop;
         this.time = time;
+        this.science = science;
+        this.scienceFactor = scienceFactor;
         this.resources = resources;
         this.outcomes = outcomes;
         this.viewData = new ActionViewData();
@@ -135,6 +144,10 @@ var Action = (function () {
                 this.execOutcome(this.outcomes[i], engine);
                 break;
             }
+        }
+        if (this.science) {
+            engine.resourcesById("science").modify(this.science, engine);
+            this.science *= this.scienceFactor;
         }
     };
     Action.prototype.execOutcome = function (outcome, engine, depth) {
@@ -285,26 +298,111 @@ var GameRule = (function () {
     }
     return GameRule;
 })();
+var GameSettings = (function () {
+    function GameSettings() {
+    }
+    GameSettings.NEIGHBOUR_TECH_MAX_DISCOUNT = 1 / 4;
+    return GameSettings;
+})();
+var HexGraph = (function () {
+    function HexGraph() {
+        this.sqGrid = {};
+    }
+    HexGraph.prototype.addTech = function (tech) {
+        this.sqGrid[tech.x + tech.y * HexGraph.MAX_GRID_SIZE] = tech;
+    };
+    HexGraph.prototype.techByPoint = function (x, y) {
+        return this.sqGrid[x + y * HexGraph.MAX_GRID_SIZE];
+    };
+    HexGraph.prototype.getNeighbours = function (x, y) {
+        var neighbours = new Array();
+        var neighbour = this.techByPoint(x - 1, y);
+        if (neighbour)
+            neighbours.push(neighbour);
+        neighbour = this.techByPoint(x, y - 1);
+        if (neighbour)
+            neighbours.push(neighbour);
+        neighbour = this.techByPoint(x + 1, y);
+        if (neighbour)
+            neighbours.push(neighbour);
+        neighbour = this.techByPoint(x, y + 1);
+        if (neighbour)
+            neighbours.push(neighbour);
+        if (y % 2 == 0) {
+            neighbour = this.techByPoint(x - 1, y - 1);
+            if (neighbour)
+                neighbours.push(neighbour);
+            neighbour = this.techByPoint(x - 1, y + 1);
+            if (neighbour)
+                neighbours.push(neighbour);
+        }
+        else {
+            neighbour = this.techByPoint(x + 1, y - 1);
+            if (neighbour)
+                neighbours.push(neighbour);
+            neighbour = this.techByPoint(x + 1, y + 1);
+            if (neighbour)
+                neighbours.push(neighbour);
+        }
+        return neighbours;
+    };
+    HexGraph.prototype.getNeighbouringPoints = function (x, y) {
+        var neighbours = new Array();
+        neighbours.push({ x: x - 1, y: y });
+        neighbours.push({ x: x, y: y - 1 });
+        neighbours.push({ x: x + 1, y: y });
+        neighbours.push({ x: x, y: y + 1 });
+        if (y % 2 == 0) {
+            neighbours.push({ x: x - 1, y: y - 1 });
+            neighbours.push({ x: x - 1, y: y + 1 });
+        }
+        else {
+            neighbours.push({ x: x + 1, y: y - 1 });
+            neighbours.push({ x: x + 1, y: y + 1 });
+        }
+        return neighbours;
+    };
+    HexGraph.MAX_GRID_SIZE = 100;
+    return HexGraph;
+})();
 var PlayerData = (function () {
     function PlayerData() {
         this.numberOfSmallHunts = 0;
         this.numberOfGrows = 0;
+        this.numFinishedTechs = 0;
     }
     return PlayerData;
 })();
 var Technology = (function () {
-    function Technology(id, name, x, y, exec, researchCost, resources) {
+    function Technology(id, name, x, y, exec, baseScienceCost, scienceIncrement, resources) {
         this.viewData = new TechViewData();
+        this.numFinishedNeighbours = 0;
         this.id = id;
         this.name = name;
         this.x = x;
         this.y = y;
         this.exec = exec;
-        this.researchCost = researchCost;
+        this.baseScienceCost = baseScienceCost;
+        this.scienceIncrement = scienceIncrement;
         this.resources = resources;
     }
     Technology.prototype.isAvailable = function (engine) {
-        return true && this.resources.isMet(engine) && this.isDiscovered && !this.isFinished;
+        return this.scienceCost <= engine.resourcesById("science").value && this.resources.isMet(engine) && this.isDiscovered && !this.isFinished;
+    };
+    Technology.prototype.updateScienceCost = function (engine) {
+        if (this.isFinished)
+            return;
+        this.numFinishedNeighbours = 0;
+        var neighbours = engine.hex.getNeighbours(this.x, this.y);
+        for (var i = 0; i < neighbours.length; i++) {
+            if (neighbours[i].isFinished)
+                this.numFinishedNeighbours++;
+        }
+        var neighbourFactor = this.getNeighbourFactor(this.numFinishedNeighbours);
+        this.scienceCost = neighbourFactor * (this.baseScienceCost + engine.playerData.numFinishedTechs * this.scienceIncrement);
+    };
+    Technology.prototype.getNeighbourFactor = function (n) {
+        return GameSettings.NEIGHBOUR_TECH_MAX_DISCOUNT + (1 - GameSettings.NEIGHBOUR_TECH_MAX_DISCOUNT) * (1 - (n - 1) / 5);
     };
     return Technology;
 })();
@@ -421,7 +519,7 @@ var ActionsRenderer = (function () {
             var tHeaderText = HelperHTML.element("span", "actionHeaderText", "Known possible outcomes");
             var tHeader = HelperHTML.element("div", "actionHeader tooltipHeader");
             tHeader.appendChild(tHeaderText);
-            var tContent = HelperHTML.element("div", "tooltipContent");
+            var tContent = HelperHTML.element("div", "actionTooltipContent");
             var tTable = HelperHTML.element("table", "tooltipTable");
             tTable.cellSpacing = "15";
             for (var i = 0; i < action.outcomes.length; i++) {
@@ -437,9 +535,14 @@ var ActionsRenderer = (function () {
                     row.className = "tooltipLastOutcome";
                 }
             }
+            if (this.engine.resourcesById("science").isDiscovered) {
+                var researchBlock = HelperHTML.element("div", "actionResearchTooltipContent", "+" + RenderUtils.beautifyFloat(action.science) + " science");
+            }
             tContent.appendChild(tTable);
             tooptil.appendChild(tHeader);
             tooptil.appendChild(tContent);
+            if (researchBlock)
+                tooptil.appendChild(researchBlock);
             outerElement.appendChild(tooptil);
         }
         return outerElement;
@@ -517,8 +620,9 @@ var DataSource = (function () {
         var woodResource = new Stat("wood", "wood");
         woodResource.insertCapModifier(new Modifier("init", 50, 0));
         engine.addResource(woodResource);
-        var researchResource = new Stat("research", "research");
-        researchResource.insertCapModifier(new Modifier("init", 50, 0));
+        var researchResource = new Stat("science", "science");
+        researchResource.insertCapModifier(new Modifier("init", 120, 0));
+        researchResource.isDiscovered = true;
         engine.addResource(researchResource);
         var cultureResource = new Stat("culture", "culture");
         cultureResource.hasCap = false;
@@ -526,7 +630,7 @@ var DataSource = (function () {
         //Grow
         var growFailOutcome = new ActionOutcome("fail", 30, ActionOutcomes.growFailExec, ActionOutcomes.growFailHistoryEntry);
         var growSuccessOutcome = new ActionOutcome("success", 90, ActionOutcomes.growSuccessExec, ActionOutcomes.growSuccessHistoryEntry);
-        var growAction = new Action("grow", "Raise a child", 2, 10 * 1000, new ResourceRequirement(["food"], [10]), [growFailOutcome, growSuccessOutcome]);
+        var growAction = new Action("grow", "Raise a child", 2, 10 * 1000, 1, 1, new ResourceRequirement(["food"], [10]), [growFailOutcome, growSuccessOutcome]);
         engine.addAction(growAction);
         //Small hunt
         var smallHuntFailOutcome = new ActionOutcome("fail", 10, ActionOutcomes.smallHuntFailExec, ActionOutcomes.smallHuntFailHistoryEntry);
@@ -535,17 +639,18 @@ var DataSource = (function () {
         var smallHuntMinorSuccess3Outcome = new ActionOutcome("minorSuccess3", 10, ActionOutcomes.smallHuntMinorSuccess3Exec, ActionOutcomes.smallHuntMinorSuccess3HistoryEntry);
         var smallHuntMajorSuccess1Outcome = new ActionOutcome("majoruccess1", 25, ActionOutcomes.smallHuntMajorSuccess1Exec, ActionOutcomes.smallHuntMajorSuccess1HistoryEntry);
         var smallHuntMajorSuccess2Outcome = new ActionOutcome("majoruccess2", 25, ActionOutcomes.smallHuntMajorSuccess2Exec, ActionOutcomes.smallHuntMajorSuccess2HistoryEntry);
-        var smallHuntAction = new Action("smallHunt", "Hunt", 3, 3 * 1000, new ResourceRequirement([], []), [smallHuntFailOutcome, smallHuntMinorSuccess1Outcome, smallHuntMinorSuccess2Outcome, smallHuntMinorSuccess3Outcome, smallHuntMajorSuccess1Outcome, smallHuntMajorSuccess2Outcome]);
+        var smallHuntAction = new Action("smallHunt", "Hunt", 3, 3 * 1000, 1, 1, new ResourceRequirement([], []), [smallHuntFailOutcome, smallHuntMinorSuccess1Outcome, smallHuntMinorSuccess2Outcome, smallHuntMinorSuccess3Outcome, smallHuntMajorSuccess1Outcome, smallHuntMajorSuccess2Outcome]);
         engine.addAction(smallHuntAction);
         smallHuntAction.isDiscovered = true;
         smallHuntAction.viewData.isContentOpen = true;
         //Great hunt
         var greatHuntOutcome = new ActionOutcome("success", 1, ActionOutcomes.greatHunt, ActionOutcomes.greatHuntHistoryEntry);
-        var greatHuntAction = new Action("greatHunt", "Great Hunt", 6, 30 * 1000, new ResourceRequirement(["wood"], [10]), [greatHuntOutcome]);
+        var greatHuntAction = new Action("greatHunt", "Great Hunt", 6, 30 * 1000, 10, 1, new ResourceRequirement(["wood"], [10]), [greatHuntOutcome]);
         engine.addAction(greatHuntAction);
         engine.addRule(GameRules.huntingRule);
         engine.addRule(GameRules.unlockGrowRule);
         engine.addRule(GameRules.unlockGreatHuntRule);
+        engine.addRule(GameRules.dicoverScienceRule);
         this.addResearch(engine);
     };
     DataSource.prototype.popRule = function (stat, engine, delta) {
@@ -566,59 +671,60 @@ var DataSource = (function () {
         }
     };
     DataSource.prototype.addResearch = function (engine) {
-        var humanity = new Technology("humanity", "Humanity", 0, 0, null, 0, new ResourceRequirement());
+        var humanity = new Technology("humanity", "Humanity", 0, 0, function () {
+        }, 0, 0, new ResourceRequirement());
         humanity.description = "Makes people human";
         humanity.isDiscovered = true;
-        humanity.isFinished = true;
         engine.addTech(humanity);
-        var stoneTools = new Technology("stoneTools", "Stone Tools", -1, -1, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        var stoneTools = new Technology("stoneTools", "Stone Tools", -1, -1, Technologies.stoneToolsExec, 5, 2, new ResourceRequirement());
         stoneTools.description = Technologies.stoneToolsDescription;
         stoneTools.isDiscovered = true;
         engine.addTech(stoneTools);
-        var gathering = new Technology("gathering", "Gathering", -1, 0, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        var gathering = new Technology("gathering", "Gathering", -1, 0, Technologies.stoneToolsExec, 5, 2, new ResourceRequirement());
         gathering.description = Technologies.stoneToolsDescription;
         gathering.isDiscovered = true;
         engine.addTech(gathering);
-        var language = new Technology("language", "Language", 0, 1, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        var language = new Technology("language", "Language", 0, 1, Technologies.stoneToolsExec, 5, 2, new ResourceRequirement());
         language.description = Technologies.stoneToolsDescription;
         language.isDiscovered = true;
         engine.addTech(language);
-        var tamingFire = new Technology("tamingFire", "Taming Fire", 0, -1, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        var tamingFire = new Technology("tamingFire", "Taming Fire", 0, -1, Technologies.stoneToolsExec, 5, 2, new ResourceRequirement());
         tamingFire.description = Technologies.stoneToolsDescription;
         tamingFire.isDiscovered = true;
         engine.addTech(tamingFire);
-        var mining = new Technology("mining", "Mining", -1, -2, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        var mining = new Technology("mining", "Mining", -1, -2, Technologies.stoneToolsExec, 10, 5, new ResourceRequirement());
         mining.description = Technologies.stoneToolsDescription;
-        mining.isDiscovered = true;
+        //mining.isDiscovered = true;
         engine.addTech(mining);
-        var socialHierarchy = new Technology("socialHierarchy", "Social Hierarchy", 1, 1, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        var socialHierarchy = new Technology("socialHierarchy", "Social Hierarchy", 1, 1, Technologies.stoneToolsExec, 15, 5, new ResourceRequirement());
         socialHierarchy.description = Technologies.stoneToolsDescription;
-        socialHierarchy.isDiscovered = true;
+        //socialHierarchy.isDiscovered = true;
         engine.addTech(socialHierarchy);
-        var agriculture = new Technology("agriculture", "Agriculture", -2, -1, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        var agriculture = new Technology("agriculture", "Agriculture", -2, -1, Technologies.stoneToolsExec, 15, 3, new ResourceRequirement());
         agriculture.description = Technologies.stoneToolsDescription;
-        agriculture.isDiscovered = true;
+        //agriculture.isDiscovered = true;
         engine.addTech(agriculture);
-        var stoneNBone = new Technology("stoneNBone", "Stone and bone weapons", -2, -3, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        var stoneNBone = new Technology("stoneNBone", "Stone and bone weapons", -2, -3, Technologies.stoneToolsExec, 25, 3, new ResourceRequirement());
         stoneNBone.description = Technologies.stoneToolsDescription;
-        stoneNBone.isDiscovered = true;
+        //stoneNBone.isDiscovered = true;
         engine.addTech(stoneNBone);
-        var irrigation = new Technology("irrigation", "Irrigation", -2, -2, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        var irrigation = new Technology("irrigation", "Irrigation", -2, -2, Technologies.stoneToolsExec, 15, 5, new ResourceRequirement());
         irrigation.description = Technologies.stoneToolsDescription;
-        irrigation.isDiscovered = true;
+        //irrigation.isDiscovered = true;
         engine.addTech(irrigation);
-        var hunting = new Technology("hunting", "Hunting", 0, -2, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        var hunting = new Technology("hunting", "Hunting", 0, -2, Technologies.stoneToolsExec, 10, 2, new ResourceRequirement());
         hunting.description = Technologies.stoneToolsDescription;
-        hunting.isDiscovered = true;
+        //hunting.isDiscovered = true;
         engine.addTech(hunting);
-        var painting = new Technology("painting", "Painting", 2, 2, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        var painting = new Technology("painting", "Painting", 2, 2, Technologies.stoneToolsExec, 10, 3, new ResourceRequirement());
         painting.description = Technologies.stoneToolsDescription;
-        painting.isDiscovered = true;
+        //painting.isDiscovered = true;
         engine.addTech(painting);
-        var monuments = new Technology("monuments", "Monuments", 2, 0, Technologies.stoneToolsExec, 5, new ResourceRequirement());
+        var monuments = new Technology("monuments", "Monuments", 2, 0, Technologies.stoneToolsExec, 15, 2, new ResourceRequirement());
         monuments.description = Technologies.stoneToolsDescription;
-        monuments.isDiscovered = true;
+        //monuments.isDiscovered = true;
         engine.addTech(monuments);
+        engine.finishTech(humanity);
     };
     DataSource.foorPerPop = 0.1;
     DataSource.canibalicFood = 20;
@@ -627,16 +733,23 @@ var DataSource = (function () {
 var DebugRenderer = (function () {
     function DebugRenderer() {
     }
-    DebugRenderer.prototype.setRoot = function (root) {
-        this.root = root;
-    };
     DebugRenderer.prototype.update = function (timeDelta, visibilityData) {
         if (visibilityData.visibleTab == VisibilityData.TAB_ACTIONS)
-            this.root.innerHTML = "Elapsed time: " + this.toTimeString(this.engine.time) + "<br>scale: " + (this.engine.timeScale / this.engine.stepScale).toFixed(1);
+            this.panel.innerHTML = "Elapsed time: " + this.toTimeString(this.engine.time) + "<br>scale: " + (this.engine.timeScale / this.engine.stepScale).toFixed(1);
     };
     DebugRenderer.prototype.load = function (root, engine) {
+        var _this = this;
         this.root = root;
         this.engine = engine;
+        this.cheatPanel = HelperHTML.element("div");
+        var btn1 = HelperHTML.element("button", "", "+10 science");
+        btn1.onclick = function () {
+            _this.engine.resourcesById("science").modify(10, _this.engine);
+        };
+        this.cheatPanel.appendChild(btn1);
+        this.root.appendChild(this.cheatPanel);
+        this.panel = HelperHTML.element("div");
+        this.root.appendChild(this.panel);
     };
     DebugRenderer.prototype.toTimeString = function (time) {
         var result = "";
@@ -676,6 +789,7 @@ var Engine = (function () {
         this.playerData = new PlayerData();
         this.ruleRemoveQueue = new Array();
         this._tech = new Array();
+        this._hex = new HexGraph();
     }
     Object.defineProperty(Engine.prototype, "time", {
         get: function () {
@@ -687,6 +801,13 @@ var Engine = (function () {
     Object.defineProperty(Engine.prototype, "resources", {
         get: function () {
             return this._resources;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Engine.prototype, "hex", {
+        get: function () {
+            return this._hex;
         },
         enumerable: true,
         configurable: true
@@ -758,6 +879,8 @@ var Engine = (function () {
     };
     Engine.prototype.addTech = function (tech) {
         this._tech.push(tech);
+        this._hex.addTech(tech);
+        tech.updateScienceCost(this);
     };
     Engine.prototype.removeRule = function (rule, isSilent) {
         if (isSilent === void 0) { isSilent = false; }
@@ -774,8 +897,17 @@ var Engine = (function () {
     };
     Engine.prototype.finishTech = function (tech) {
         tech.resources.subtractFrom(this);
+        this.resourcesById("science").modify(-Math.floor(tech.scienceCost), this);
         tech.exec(tech, this);
         tech.isFinished = true;
+        this.playerData.numFinishedTechs++;
+        var neighbours = this._hex.getNeighbours(tech.x, tech.y);
+        for (var i = 0; i < neighbours.length; i++) {
+            neighbours[i].isDiscovered = true;
+        }
+        for (var i = 0; i < this._tech.length; i++) {
+            this._tech[i].updateScienceCost(this);
+        }
     };
     return Engine;
 })();
@@ -903,9 +1035,8 @@ var HexGrid = (function () {
         this.canvas = canvas;
         this.context = canvas.getContext("2d");
     };
-    HexGrid.prototype.render = function (techList) {
+    HexGrid.prototype.render = function (techList, engine) {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.sqGrid = {};
         var minX = Number.MAX_VALUE;
         var minY = Number.MAX_VALUE;
         var maxX = -Number.MAX_VALUE;
@@ -915,7 +1046,6 @@ var HexGrid = (function () {
             minY = Math.min(minY, techList[i].y);
             maxX = Math.max(maxX, techList[i].x);
             maxY = Math.max(maxY, techList[i].y);
-            this.sqGrid[techList[i].x + techList[i].y * HexGrid.MAX_GRID_SIZE] = techList[i];
         }
         var maxWidth = (this.canvas.width - HexGrid.PADDING * 2) / (maxX - minX + 3 / 2);
         var maxHeight = (this.canvas.height - HexGrid.PADDING * 2) / ((maxY - minY) * 3 / 4 + 1);
@@ -923,23 +1053,29 @@ var HexGrid = (function () {
         maxHeight = maxHeight / 2;
         this.sideLength = Math.min(maxHeight, maxWidth);
         for (i = 0; i < techList.length; i++) {
-            var hasNeighbour = this.hasFinishedNeighbour(techList[i]);
-            if (techList[i].isFinished || hasNeighbour || true) {
-                this.drawHex(this.sideLength, techList[i].x - minX, techList[i].y - minY);
+            if (techList[i].isFinished || techList[i].isDiscovered) {
+                this.updateSingleTech(techList[i], engine); /*
+                var color: string = techList[i].isFinished ? HexGrid.finishedColor : HexGrid.normalColor;
+                var borderColor: string = techList[i].isFinished ? HexGrid.finishedBorderColor : (techList[i].isAvailable(engine) ? HexGrid.normalBorderColor : HexGrid.unavailableBorderColor);
+                this.drawHex(this.sideLength, techList[i].x - minX, techList[i].y - minY, color, borderColor);*/
             }
         }
         this.minX = minX;
         this.minY = minY;
     };
+    HexGrid.prototype.updateSingleTech = function (tech, engine) {
+        var color = tech.isFinished ? HexGrid.finishedColor : HexGrid.normalColor;
+        var borderColor = tech.isFinished ? HexGrid.finishedBorderColor : (tech.isAvailable(engine) ? HexGrid.normalBorderColor : HexGrid.unavailableBorderColor);
+        this.drawHex(this.sideLength, tech.x - this.minX, tech.y - this.minY, color, borderColor);
+    };
     HexGrid.prototype.renderOverlayHex = function (tech, context, moreData) {
         if (moreData === void 0) { moreData = {}; }
         context.clearRect(0, 0, this.canvas.width, this.canvas.height);
         if (tech) {
-            this.drawHex(this.sideLength, tech.x - this.minX, tech.y - this.minY, "#8888aa", context);
+            this.drawHex(this.sideLength, tech.x - this.minX, tech.y - this.minY, tech.isFinished ? HexGrid.finishedOverlayColor : HexGrid.overlayColor, HexGrid.normalBorderColor, context);
         }
     };
-    HexGrid.prototype.drawHex = function (sideLength, coordX, coordY, color, context) {
-        if (color === void 0) { color = "#7777ff"; }
+    HexGrid.prototype.drawHex = function (sideLength, coordX, coordY, color, borderColor, context) {
         if (context === void 0) { context = null; }
         context = context || this.context;
         var centerX = this.getCenterX(sideLength, coordX, coordY);
@@ -947,7 +1083,7 @@ var HexGrid = (function () {
         //console.log("hex " + label +": " + centerX.toFixed() + " " + centerY.toFixed());
         sideLength *= 0.97;
         context.fillStyle = color;
-        context.strokeStyle = "#4444bb";
+        context.strokeStyle = borderColor;
         context.beginPath();
         for (var i = 0; i < 6; i++) {
             var angle = Math.PI / 3 * (i + 0.5);
@@ -961,7 +1097,6 @@ var HexGrid = (function () {
         context.closePath();
         context.fill();
         context.stroke();
-        context.fillStyle = "#000000";
     };
     HexGrid.prototype.getCenterX = function (sideLength, coordX, coordY) {
         return HexGrid.PADDING + sideLength * Math.sqrt(3) * (coordX + (coordY % 2 == 1 ? 0.5 : 1));
@@ -986,54 +1121,20 @@ var HexGrid = (function () {
         enumerable: true,
         configurable: true
     });
-    HexGrid.prototype.techByPoint = function (x, y) {
-        return this.sqGrid[x + y * HexGrid.MAX_GRID_SIZE];
-    };
-    HexGrid.prototype.hasFinishedNeighbour = function (tech) {
-        var neighbours = this.getNeighbours(tech.x, tech.y);
-        for (var i = 0; i < neighbours.length; i++) {
+    /*
+    private hasFinishedNeighbour(tech:Technology, hex:HexGraph): boolean {
+        var neighbours: Array<Technology> = hex.getNeighbours(tech.x, tech.y);
+        for (var i: number = 0; i < neighbours.length; i++) {
             if (neighbours[i].isFinished)
                 return true;
         }
         return false;
-    };
-    HexGrid.prototype.getNeighbours = function (x, y) {
-        var neighbours = new Array();
-        var neighbour = this.techByPoint(x - 1, y);
-        if (neighbour)
-            neighbours.push(neighbour);
-        neighbour = this.techByPoint(x, y - 1);
-        if (neighbour)
-            neighbours.push(neighbour);
-        neighbour = this.techByPoint(x + 1, y);
-        if (neighbour)
-            neighbours.push(neighbour);
-        neighbour = this.techByPoint(x, y + 1);
-        if (neighbour)
-            neighbours.push(neighbour);
-        if (y % 2 == 0) {
-            neighbour = this.techByPoint(x - 1, y - 1);
-            if (neighbour)
-                neighbours.push(neighbour);
-            neighbour = this.techByPoint(x - 1, y + 1);
-            if (neighbour)
-                neighbours.push(neighbour);
-        }
-        else {
-            neighbour = this.techByPoint(x + 1, y - 1);
-            if (neighbour)
-                neighbours.push(neighbour);
-            neighbour = this.techByPoint(x + 1, y + 1);
-            if (neighbour)
-                neighbours.push(neighbour);
-        }
-        return neighbours;
-    };
-    HexGrid.prototype.coordinatesToTech = function (x, y, debugData) {
+    }*/
+    HexGrid.prototype.coordinatesToTech = function (x, y, hex) {
         var aprX = Math.floor((x - HexGrid.PADDING) / (this.sideLength * Math.sqrt(3))) + this.minX;
         var aprY = Math.floor((y - HexGrid.PADDING) / (this.sideLength * 3 / 2)) + this.minY;
-        var aprTech = this.techByPoint(aprX, aprY);
-        var neighbours = this.getNeighbours(aprX, aprY);
+        var aprTech = hex.techByPoint(aprX, aprY);
+        var neighbours = hex.getNeighbours(aprX, aprY);
         if (aprTech)
             neighbours.push(aprTech);
         var bestIndex = -1;
@@ -1041,14 +1142,6 @@ var HexGrid = (function () {
         for (var i = 0; i < neighbours.length; i++) {
             var centerX = this.getCenterX(this.sideLength, neighbours[i].x - this.minX, neighbours[i].y - this.minY);
             var centerY = this.getCenterY(this.sideLength, neighbours[i].x - this.minX, neighbours[i].y - this.minY);
-            /*	if (debugData) {
-                    var ctx: CanvasRenderingContext2D = <CanvasRenderingContext2D>debugData;
-                    ctx.strokeStyle = "#222222";
-                    ctx.beginPath();
-                    ctx.moveTo(x, y);
-                    ctx.lineTo(centerX, centerY);
-                    ctx.stroke();
-                }*/
             var distance = (x - centerX) * (x - centerX) + (y - centerY) * (y - centerY);
             if (distance < bestDistance) {
                 bestIndex = i;
@@ -1062,9 +1155,15 @@ var HexGrid = (function () {
         else
             return null;
     };
-    HexGrid.MAX_GRID_SIZE = 100;
     HexGrid.PADDING = 4;
     HexGrid.SPACING = 4;
+    HexGrid.finishedColor = "#44bb44";
+    HexGrid.normalColor = "#7777ff";
+    HexGrid.overlayColor = "#8888aa";
+    HexGrid.finishedOverlayColor = "#66dd66";
+    HexGrid.unavailableBorderColor = "#4444bb";
+    HexGrid.normalBorderColor = "#4444bb";
+    HexGrid.finishedBorderColor = "#4444bb";
     return HexGrid;
 })();
 var LogRenderer = (function () {
@@ -1408,11 +1507,21 @@ var TechRenderer = (function () {
         if (!this.isGridRendered) {
             this.isGridRendered = true;
             HelperHTML.eject(this.ui);
-            this.hexGrid.render(this.engine.tech);
+            this.hexGrid.render(this.engine.tech, this.engine);
             for (var i = 0; i < this.engine.tech.length; i++) {
                 this.renderTechUI(this.engine.tech[i]);
             }
             HelperHTML.inject(this.ui);
+        }
+        else {
+            for (var i = 0; i < this.engine.tech.length; i++) {
+                var tech = this.engine.tech[i];
+                if (!tech.viewData.isValid(tech, this.engine)) {
+                    this.hexGrid.updateSingleTech(tech, this.engine);
+                    this.renderTechUI(tech);
+                    trace("not valid");
+                }
+            }
         }
     };
     TechRenderer.prototype.load = function (root, engine, input) {
@@ -1434,39 +1543,53 @@ var TechRenderer = (function () {
     TechRenderer.prototype.onMouseMove = function (event) {
         var position = Hacks.globalToLocal(event);
         var debugData = {};
-        var tech = this.hexGrid.coordinatesToTech(position.x, position.y, this.overlay);
+        var tech = this.hexGrid.coordinatesToTech(position.x, position.y, this.engine.hex);
         if (this.lastRenderedTech != tech) {
             if (this.lastRenderedTech)
                 this.lastRenderedTech.viewData.tooltip.style.display = "none";
             this.lastRenderedTech = tech;
-            this.hexGrid.renderOverlayHex(tech, this.overlay);
-            if (tech)
+            this.hexGrid.renderOverlayHex((tech && tech.isDiscovered) ? tech : null, this.overlay);
+            if (tech && tech.isDiscovered)
                 tech.viewData.tooltip.style.display = "block";
         }
     };
     TechRenderer.prototype.onMouseClick = function (event) {
-        var tech = this.hexGrid.coordinatesToTech(event.x, event.y, this.overlay);
-        if (tech)
+        var tech = this.hexGrid.coordinatesToTech(event.x, event.y, this.engine.hex);
+        if (tech) {
             /*
             console.log(tech.id + " " + event.x.toFixed()  + " " +  event.y.toFixed());
         else
             console.log("nothing here " + event.x.toFixed() + " " + event.y.toFixed());*/
             this.input.onTechClick(tech);
+            this.lastRenderedTech = null;
+            this.onMouseMove(event);
+            this.hexGrid.updateSingleTech(tech, this.engine);
+            this.renderTechUI(tech);
+        }
     };
     TechRenderer.prototype.onMouseLeave = function () {
         this.lastRenderedTech = null;
         this.hexGrid.renderOverlayHex(null, this.overlay);
     };
     TechRenderer.prototype.renderTechUI = function (tech) {
+        if (tech.viewData.element) {
+            HelperHTML.eject(tech.viewData.element);
+            this.fillTechUIData(tech);
+            HelperHTML.inject(tech.viewData.element);
+            tech.viewData.setRendered(tech, tech.viewData.element, this.engine);
+            return;
+        }
         var position = this.hexGrid.hexCenter(tech);
         var f = document.createDocumentFragment();
         var containerDiv = HelperHTML.element("div", "researchUI");
         var headerDiv = HelperHTML.element("div", "");
         var header = HelperHTML.element("span", "techHeader", tech.name);
         var tooltipDesc = HelperHTML.element("div", "techDescContainer");
-        var descSpan = HelperHTML.element("div", "techDesc", tech.description);
+        var hintDiv = HelperHTML.element("div", "techDesc");
+        var descSpan = HelperHTML.element("div", "", tech.description);
+        var discountSpan = HelperHTML.element("div", "techDiscount");
         tooltipDesc.style.display = "none";
-        var reqsDiv = HelperHTML.element("div", "", tech.researchCost.toFixed());
+        var reqsDiv = HelperHTML.element("div");
         var researchReqDiv = HelperHTML.element("div", "");
         //var tooltipResearch: HTMLElement = HelperHTML.element("div", "baseTooltip, techResearch", "TODO");
         var list = HelperHTML.element("ol", "reseqrchReqList");
@@ -1480,11 +1603,14 @@ var TechRenderer = (function () {
         containerDiv.appendChild(headerDiv);
         headerDiv.appendChild(header);
         containerDiv.appendChild(tooltipDesc);
-        tooltipDesc.appendChild(descSpan);
+        tooltipDesc.appendChild(hintDiv);
+        hintDiv.appendChild(descSpan);
+        hintDiv.appendChild(discountSpan);
         containerDiv.appendChild(reqsDiv);
         reqsDiv.appendChild(researchReqDiv);
         //researchReqDiv.appendChild(tooltipResearch);
         researchReqDiv.appendChild(list);
+        containerDiv.style.display = tech.isDiscovered ? "block" : "none";
         containerDiv.style.width = this.hexGrid.hexWidth * 0.9 + "px";
         headerDiv.style.width = this.hexGrid.hexWidth * 0.9 + "px";
         containerDiv.style.height = this.hexGrid.hexHeight * 0.9 + "px";
@@ -1494,9 +1620,34 @@ var TechRenderer = (function () {
         trace(tooltipDesc.style.height);
         tooltipDesc.style.left = this.hexGrid.hexWidth * 0.95 + "px";
         tooltipDesc.style.top = -this.hexGrid.hexHeight * 0.9 / 4 + "px";
-        this.ui.appendChild(f);
         tech.viewData.element = containerDiv;
         tech.viewData.tooltip = tooltipDesc;
+        tech.viewData.researchPrice = reqsDiv;
+        tech.viewData.discount = discountSpan;
+        this.fillTechUIData(tech);
+        this.ui.appendChild(f);
+    };
+    TechRenderer.prototype.fillTechUIData = function (tech) {
+        tech.viewData.element.style.display = tech.isDiscovered ? "block" : "none";
+        var researchPrice = tech.viewData.researchPrice;
+        if (!tech.isFinished) {
+            var isAvailable = tech.isAvailable(this.engine);
+            if (isAvailable)
+                researchPrice.className = "reqsDiv availableTech";
+            else
+                researchPrice.className = "reqsDiv unavailableTech";
+            researchPrice.innerHTML = tech.scienceCost.toFixed() + " science";
+            if (tech.numFinishedNeighbours > 1) {
+                tech.viewData.discount.innerText = "\n" + ((1 - tech.getNeighbourFactor(tech.numFinishedNeighbours)) * 100).toFixed() + " % discount due to finished neighbouring technologies.";
+                tech.viewData.discount.style.display = "inline";
+            }
+            else
+                tech.viewData.discount.style.display = "none";
+        }
+        else {
+            researchPrice.style.display = "none";
+            tech.viewData.discount.style.display = "none";
+        }
     };
     return TechRenderer;
 })();
@@ -1506,11 +1657,13 @@ var TechViewData = (function () {
     TechViewData.prototype.setRendered = function (tech, element, engine) {
         this.isRendered = true;
         this.element = element;
-        this.tooltip = element.getElementsByClassName("baseTooltip")[0];
+        this.tooltip = element.getElementsByClassName("techDescContainer")[0];
         this.isAvailable = tech.isAvailable(engine);
+        this.isFinished = tech.isFinished;
+        this.scienceCost = tech.scienceCost;
     };
     TechViewData.prototype.isValid = function (tech, engine) {
-        return this.isFinished == tech.isFinished && this.isAvailable == tech.isAvailable(engine);
+        return (!this.isRendered && !tech.isDiscovered) || this.isRendered == tech.isDiscovered && this.isFinished == tech.isFinished && this.isAvailable == tech.isAvailable(engine) && this.scienceCost == tech.scienceCost;
     };
     return TechViewData;
 })();

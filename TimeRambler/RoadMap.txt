@@ -50,6 +50,9 @@
 		render unavailable tech
 		render finished tech
 		hook tech state, changes and updates
+
+		subtract science cost when finishing technologies
+		fix science tooltip on actions
 		increase price with each tech discovered
 		decrease price with each neighbour
 		show neighbour hints

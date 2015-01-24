@@ -4,6 +4,8 @@
     public name: string;
     public pop: number;
     public time: number;
+    public science: number;
+    public scienceFactor: number;
     private _timeLeft: number;
     private _isStarted: boolean;
     public resources: ResourceRequirement;
@@ -14,11 +16,13 @@
     public isObsolete: boolean;
 
 
-    constructor(id: string, name: string, pop: number, time: number, resources: ResourceRequirement, outcomes: Array<ActionOutcome>) {
+    constructor(id: string, name: string, pop: number, time: number, science:number, scienceFactor:number, resources: ResourceRequirement, outcomes: Array<ActionOutcome>) {
         this.id = id;
         this.name = name;
         this.pop = pop;
         this.time = time;
+        this.science = science;
+        this.scienceFactor = scienceFactor;
         this.resources = resources;
         this.outcomes = outcomes;
         this.viewData = new ActionViewData();
@@ -88,6 +92,11 @@
                 break;
             }
         }
+		if (this.science) {
+			engine.resourcesById("science").modify(this.science, engine);
+			this.science *= this.scienceFactor;
+		}
+
     }
 
     private execOutcome(outcome: ActionOutcome, engine:Engine, depth:number = 0): void {

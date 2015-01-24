@@ -113,7 +113,7 @@
             var tHeaderText: HTMLElement = HelperHTML.element("span", "actionHeaderText", "Known possible outcomes"); 
             var tHeader: HTMLElement = HelperHTML.element("div", "actionHeader tooltipHeader");
             tHeader.appendChild(tHeaderText);
-            var tContent: HTMLElement = HelperHTML.element("div", "tooltipContent");
+            var tContent: HTMLElement = HelperHTML.element("div", "actionTooltipContent");
             var tTable: HTMLTableElement = <HTMLTableElement> HelperHTML.element("table", "tooltipTable");
             tTable.cellSpacing = "15";
             for (var i: number = 0; i < action.outcomes.length; i++) {
@@ -129,9 +129,17 @@
                     row.className = "tooltipLastOutcome";
                 }
             }
+			if (this.engine.resourcesById("science").isDiscovered) {
+				var researchBlock: HTMLElement = HelperHTML.element("div", "actionResearchTooltipContent",
+					"+" + RenderUtils.beautifyFloat(action.science) + " science");
+			}
+
+
             tContent.appendChild(tTable);
             tooptil.appendChild(tHeader);
             tooptil.appendChild(tContent);
+			if (researchBlock)
+				tooptil.appendChild(researchBlock);
             outerElement.appendChild(tooptil);
         }
         

@@ -5,19 +5,26 @@
 
     private root: HTMLElement;
     private engine: Engine;
-
-    public setRoot(root: HTMLElement): void {
-        this.root = root;
-    }
+	private panel: HTMLElement;
+	private cheatPanel: HTMLElement;
 
     public update(timeDelta: number, visibilityData: VisibilityData): void {
         if (visibilityData.visibleTab == VisibilityData.TAB_ACTIONS)
-            this.root.innerHTML = "Elapsed time: " + this.toTimeString(this.engine.time) + "<br>scale: " + (this.engine.timeScale/this.engine.stepScale).toFixed(1);
+            this.panel.innerHTML = "Elapsed time: " + this.toTimeString(this.engine.time) + "<br>scale: " + (this.engine.timeScale/this.engine.stepScale).toFixed(1);
     }
 
     public load(root: HTMLElement, engine: Engine): void {
         this.root = root;
         this.engine = engine;
+
+		this.cheatPanel = HelperHTML.element("div");
+		var btn1: HTMLElement = HelperHTML.element("button", "", "+10 science");
+		btn1.onclick = () => { this.engine.resourcesById("science").modify(10, this.engine) };
+		this.cheatPanel.appendChild(btn1);
+		this.root.appendChild(this.cheatPanel);
+
+		this.panel = HelperHTML.element("div");
+		this.root.appendChild(this.panel);
     }
 
     private toTimeString(time: number): string {

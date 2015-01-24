@@ -148,9 +148,16 @@
     background: #b6a75f;
 }
 
-.tooltipContent {
+.actionTooltipContent {
     padding: 0 0.4em 0.8em 0.4em;
     background: #716a4a;
+    color:white;
+}
+
+.actionResearchTooltipContent {
+    padding: 8px 10px 10px 15px;
+    background: #9999ff;
+    font-weight:bold;
     color:white;
 }
 
@@ -214,6 +221,11 @@
     transform: translateY(-50%);
 }
 
+.techDiscount {
+    font-size: small;
+    font-style:italic;
+}
+
 .techResearch {
     font-weight:bold;   
 }
@@ -226,4 +238,14 @@
 .reseqrchReqListItem {
     position:relative;
     text-align: center;    
+}
+
+.unavailableTech {
+    color:#ff6359;
+    font-weight: bold;    
+}
+
+.availableTech {
+    color:#ced4f7;
+    font-weight: bold;    
 }

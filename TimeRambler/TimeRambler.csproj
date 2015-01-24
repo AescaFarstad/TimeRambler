@@ -32,6 +32,8 @@
     <TypeScriptCompile Include="engine\ActionOutcome.ts" />
     <TypeScriptCompile Include="dataSource\ActionOutcomes.ts" />
     <TypeScriptCompile Include="engine\GameRule.ts" />
+    <TypeScriptCompile Include="engine\GameSettings.ts" />
+    <TypeScriptCompile Include="engine\HexGraph.ts" />
     <TypeScriptCompile Include="engine\PlayerData.ts" />
     <TypeScriptCompile Include="engine\Technology.ts" />
     <TypeScriptCompile Include="Hacks.ts" />

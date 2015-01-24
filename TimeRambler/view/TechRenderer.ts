@@ -16,15 +16,28 @@
         if (visibilityData.visibleTab != VisibilityData.TAB_SOMETHING_ELSE) {
             return;
 		}
+
+
 		if (!this.isGridRendered) {
 			this.isGridRendered = true;
 			HelperHTML.eject(this.ui);
-			this.hexGrid.render(this.engine.tech);
+			this.hexGrid.render(this.engine.tech, this.engine);
 			for (var i: number = 0; i < this.engine.tech.length; i++) {
 				this.renderTechUI(this.engine.tech[i]);
 			}
 			HelperHTML.inject(this.ui);
 		}
+		else {
+			for (var i: number = 0; i < this.engine.tech.length; i++) {
+				var tech: Technology = this.engine.tech[i];
+				if (!tech.viewData.isValid(tech, this.engine)){
+					this.hexGrid.updateSingleTech(tech, this.engine);
+					this.renderTechUI(tech);
+					trace("not valid");
+				}
+			}
+		}
+
     }
 
     public load(root: HTMLElement, engine: Engine, input:Input): void {
@@ -51,25 +64,30 @@
 	private onMouseMove(event: MouseEvent): void{
 		var position: any = Hacks.globalToLocal(event);
 		var debugData: any = {};
-		var tech: Technology = this.hexGrid.coordinatesToTech(position.x, position.y, this.overlay);
+		var tech: Technology = this.hexGrid.coordinatesToTech(position.x, position.y, this.engine.hex);
 		if (this.lastRenderedTech != tech) {
 			if (this.lastRenderedTech)
-				this.lastRenderedTech.viewData.tooltip.style.display = "none";
+				this.lastRenderedTech.viewData.tooltip.style.display = "none";			
 			this.lastRenderedTech = tech;
-			this.hexGrid.renderOverlayHex(tech, this.overlay);
-			if (tech)
+			this.hexGrid.renderOverlayHex((tech && tech.isDiscovered) ? tech : null, this.overlay);
+			if (tech && tech.isDiscovered)
 				tech.viewData.tooltip.style.display = "block";
 		}
 	}
 
 	private onMouseClick(event: MouseEvent): void{
-		var tech: Technology = this.hexGrid.coordinatesToTech(event.x, event.y, this.overlay);
-		if (tech)
+		var tech: Technology = this.hexGrid.coordinatesToTech(event.x, event.y, this.engine.hex);
+		if (tech) {
 			/*
 			console.log(tech.id + " " + event.x.toFixed()  + " " +  event.y.toFixed());
 		else
 			console.log("nothing here " + event.x.toFixed() + " " + event.y.toFixed());*/
 			this.input.onTechClick(tech);
+			this.lastRenderedTech = null;
+			this.onMouseMove(event);
+			this.hexGrid.updateSingleTech(tech, this.engine);
+			this.renderTechUI(tech);
+		}
 	}
 
 	private onMouseLeave(): void{
@@ -78,6 +96,16 @@
 	}
 
 	private renderTechUI(tech: Technology): void{
+		if (tech.viewData.element) {
+			HelperHTML.eject(tech.viewData.element);
+
+			this.fillTechUIData(tech);
+
+			HelperHTML.inject(tech.viewData.element);
+			tech.viewData.setRendered(tech, tech.viewData.element, this.engine);
+			return;
+		}
+
 		var position: IPoint = this.hexGrid.hexCenter(tech);
 
 		var f: DocumentFragment = document.createDocumentFragment();
@@ -85,9 +113,11 @@
 		var headerDiv:HTMLElement = HelperHTML.element("div", "");
 		var header:HTMLElement = HelperHTML.element("span", "techHeader", tech.name);
 		var tooltipDesc: HTMLElement = HelperHTML.element("div", "techDescContainer");
-		var descSpan:HTMLElement = HelperHTML.element("div", "techDesc", tech.description);
+		var hintDiv: HTMLElement = HelperHTML.element("div", "techDesc");
+		var descSpan:HTMLElement = HelperHTML.element("div", "", tech.description);
+		var discountSpan: HTMLElement = HelperHTML.element("div", "techDiscount");
 		tooltipDesc.style.display = "none";
-		var reqsDiv: HTMLElement = HelperHTML.element("div", "", tech.researchCost.toFixed());
+		var reqsDiv: HTMLElement = HelperHTML.element("div");
 		var researchReqDiv: HTMLElement = HelperHTML.element("div", "");
 		//var tooltipResearch: HTMLElement = HelperHTML.element("div", "baseTooltip, techResearch", "TODO");
 		var list: HTMLOListElement = <HTMLOListElement>HelperHTML.element("ol", "reseqrchReqList");
@@ -102,11 +132,15 @@
 		containerDiv.appendChild(headerDiv);
 			headerDiv.appendChild(header);		
 		containerDiv.appendChild(tooltipDesc);	
-			tooltipDesc.appendChild(descSpan);
+			tooltipDesc.appendChild(hintDiv);
+			hintDiv.appendChild(descSpan);
+			hintDiv.appendChild(discountSpan);
 		containerDiv.appendChild(reqsDiv);
 			reqsDiv.appendChild(researchReqDiv);
 				//researchReqDiv.appendChild(tooltipResearch);
 			researchReqDiv.appendChild(list);
+
+		containerDiv.style.display = tech.isDiscovered ? "block" : "none";
 
 		containerDiv.style.width = this.hexGrid.hexWidth * 0.9 + "px";
 		headerDiv.style.width = this.hexGrid.hexWidth * 0.9 + "px";
@@ -119,8 +153,38 @@
 		tooltipDesc.style.left = this.hexGrid.hexWidth * 0.95 + "px";
 		tooltipDesc.style.top = - this.hexGrid.hexHeight * 0.9 / 4 + "px";
 
-		this.ui.appendChild(f);
 		tech.viewData.element = containerDiv;
 		tech.viewData.tooltip = tooltipDesc;
+		tech.viewData.researchPrice = reqsDiv;
+		tech.viewData.discount = discountSpan;
+
+		this.fillTechUIData(tech);
+
+		this.ui.appendChild(f);
+	}
+
+	private fillTechUIData(tech: Technology): void {
+		
+		tech.viewData.element.style.display = tech.isDiscovered ? "block" : "none";
+
+		var researchPrice: HTMLElement = tech.viewData.researchPrice;
+		if (!tech.isFinished) {
+			var isAvailable: boolean = tech.isAvailable(this.engine);
+			if (isAvailable)
+				researchPrice.className = "reqsDiv availableTech";
+			else
+				researchPrice.className = "reqsDiv unavailableTech";
+			researchPrice.innerHTML = tech.scienceCost.toFixed() + " science";
+			if (tech.numFinishedNeighbours > 1) {
+				tech.viewData.discount.innerText = "\n" + ((1 - tech.getNeighbourFactor(tech.numFinishedNeighbours)) * 100).toFixed() + " % discount due to finished neighbouring technologies.";
+				tech.viewData.discount.style.display = "inline";
+			}
+			else
+				tech.viewData.discount.style.display = "none";
+		}
+		else {
+			researchPrice.style.display = "none";
+			tech.viewData.discount.style.display = "none";
+		}
 	}
 }   

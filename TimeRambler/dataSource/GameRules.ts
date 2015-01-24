@@ -5,6 +5,7 @@
         GameRules.huntingRule = new GameRule("huntingRule", GameRules.huntingRuleExec);
         GameRules.unlockGrowRule = new GameRule("unlockGrowRule", GameRules.unlockGrowRuleExec);
         GameRules.unlockGreatHuntRule = new GameRule("unlockGreatHuntRule", GameRules.unlockGreatHuntRuleExec);
+        GameRules.dicoverScienceRule = new GameRule("dicoverScienceRule", GameRules.dicoverScienceRuleExec);
     }
 
     //if there is not enough food people must die
@@ -49,6 +50,15 @@
         if (engine.playerData.numberOfSmallHunts > 2 && engine.playerData.numberOfGrows > 1) {
             engine.actionsById("greatHunt").isDiscovered = true;
             engine.removeRule(GameRules.unlockGreatHuntRule);
+        }
+    }
+
+	//discover science when you get 3
+    public static dicoverScienceRule: GameRule;
+    public static dicoverScienceRuleExec(engine: Engine): void {
+        if (engine.resourcesById("science").value >= 3) {
+            engine.resourcesById("science").isDiscovered = true;
+			engine.removeRule(GameRules.dicoverScienceRule);
         }
     }
     

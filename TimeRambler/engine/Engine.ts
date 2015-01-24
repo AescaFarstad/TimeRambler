@@ -9,6 +9,7 @@
         this.playerData = new PlayerData();
         this.ruleRemoveQueue = new Array<GameRule>();
         this._tech = new Array<Technology>();
+        this._hex = new HexGraph();
     }
 
     public timeScale: number = 1;
@@ -26,6 +27,11 @@
     private _resources: Array<Stat>;
     public get resources(): Array<Stat> {
         return this._resources;
+    }
+
+	private _hex: HexGraph;
+    public get hex(): HexGraph {
+        return this._hex;
     }
 
     private _resourcesById: Object;
@@ -102,6 +108,8 @@
 
 	public addTech(tech: Technology): void {
         this._tech.push(tech);
+		this._hex.addTech(tech);
+		tech.updateScienceCost(this);
     }
 
     public removeRule(rule: GameRule, isSilent: boolean = false): void {
@@ -119,8 +127,19 @@
 
 	public finishTech(tech: Technology): void {
 		tech.resources.subtractFrom(this);
+		this.resourcesById("science").modify(-Math.floor(tech.scienceCost), this);
         tech.exec(tech, this);
 		tech.isFinished = true;
+		this.playerData.numFinishedTechs++;
+		var neighbours: Array<Technology> = this._hex.getNeighbours(tech.x, tech.y);
+		for (var i: number = 0; i < neighbours.length; i++) {
+			neighbours[i].isDiscovered = true;
+        }
+
+		for (var i: number = 0; i < this._tech.length; i++) {
+			this._tech[i].updateScienceCost(this);
+        }
+
     }
 
 	
